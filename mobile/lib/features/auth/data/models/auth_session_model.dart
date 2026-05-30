@@ -3,15 +3,15 @@ import '../../domain/entities/user.dart';
 
 class AuthSessionModel {
   static AuthSession fromJson(Map<String, dynamic> json) {
-    final u = json['user'] as Map<String, dynamic>;
+    final u = json['usuario'] as Map<String, dynamic>;
     return AuthSession(
-      accessToken: json['accessToken'] as String,
-      refreshToken: json['refreshToken'] as String,
-      user: User(
+      tokenAcesso: json['tokenAcesso'] as String,
+      tokenAtualizacao: json['tokenAtualizacao'] as String,
+      usuario: User(
         id: u['id'] as String,
-        name: u['name'] as String,
+        nome: u['nome'] as String,
         email: u['email'] as String,
-        plan: (u['plan'] as String?) ?? 'free',
+        plano: (u['plano'] as String?) ?? 'gratuito',
       ),
     );
   }

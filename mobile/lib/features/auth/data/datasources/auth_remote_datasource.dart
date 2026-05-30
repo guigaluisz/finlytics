@@ -6,17 +6,17 @@ class AuthRemoteDataSource {
   final Dio dio;
   AuthRemoteDataSource(this.dio);
 
-  Future<AuthSession> login(String email, String password) async {
-    final res = await dio.post('/auth/login', data: {'email': email, 'password': password});
+  Future<AuthSession> login(String email, String senha) async {
+    final res = await dio.post('/autenticacao/login', data: {'email': email, 'senha': senha});
     return AuthSessionModel.fromJson(res.data as Map<String, dynamic>);
   }
 
   Future<AuthSession> register(Map<String, dynamic> body) async {
-    final res = await dio.post('/auth/register', data: body);
+    final res = await dio.post('/autenticacao/registrar', data: body);
     return AuthSessionModel.fromJson(res.data as Map<String, dynamic>);
   }
 
-  Future<void> logout(String refreshToken) async {
-    await dio.post('/auth/logout', data: {'refreshToken': refreshToken});
+  Future<void> logout(String tokenAtualizacao) async {
+    await dio.post('/autenticacao/sair', data: {'tokenAtualizacao': tokenAtualizacao});
   }
 }

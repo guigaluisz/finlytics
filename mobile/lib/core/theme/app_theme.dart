@@ -20,7 +20,7 @@ abstract class AppTheme {
       colorScheme: scheme,
       scaffoldBackgroundColor: isDark ? AppColors.bgDark : AppColors.bgLight,
       fontFamily: 'Inter',
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
         elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),

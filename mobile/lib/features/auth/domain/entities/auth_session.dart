@@ -1,8 +1,8 @@
 import 'user.dart';
 
 class AuthSession {
-  final String accessToken;
-  final String refreshToken;
-  final User user;
-  const AuthSession({required this.accessToken, required this.refreshToken, required this.user});
+  final String tokenAcesso;
+  final String tokenAtualizacao;
+  final User usuario;
+  const AuthSession({required this.tokenAcesso, required this.tokenAtualizacao, required this.usuario});
 }

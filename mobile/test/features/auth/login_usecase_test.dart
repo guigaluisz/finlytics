@@ -19,9 +19,9 @@ void main() {
   });
 
   const session = AuthSession(
-    accessToken: 'a',
-    refreshToken: 'r',
-    user: User(id: '1', name: 'Lucas', email: 'l@e.com', plan: 'free'),
+    tokenAcesso: 'a',
+    tokenAtualizacao: 'r',
+    usuario: User(id: '1', nome: 'Lucas', email: 'l@e.com', plano: 'gratuito'),
   );
 
   test('retorna AuthSession em sucesso', () async {

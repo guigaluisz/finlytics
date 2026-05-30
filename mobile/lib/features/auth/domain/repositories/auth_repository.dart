@@ -3,13 +3,13 @@ import '../../../../core/error/failure.dart';
 import '../entities/auth_session.dart';
 
 abstract class AuthRepository {
-  Future<Either<Failure, AuthSession>> login(String email, String password);
+  Future<Either<Failure, AuthSession>> login(String email, String senha);
   Future<Either<Failure, AuthSession>> register({
-    required String name,
-    String? lastName,
+    required String nome,
+    String? sobrenome,
     required String email,
-    String? phone,
-    required String password,
+    String? telefone,
+    required String senha,
   });
   Future<Either<Failure, Unit>> logout();
 }

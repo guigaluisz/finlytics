@@ -12,8 +12,8 @@ class LoginPage extends ConsumerStatefulWidget {
 
 class _LoginPageState extends ConsumerState<LoginPage> {
   final _form = GlobalKey<FormState>();
-  final _email = TextEditingController();
-  final _password = TextEditingController();
+  final _email = TextEditingController(text: 'lucas2@teste.com');
+  final _senha = TextEditingController(text: 'Senha@123');
   bool _obscure = true;
 
   @override
@@ -22,7 +22,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     ref.listen(authViewModelProvider, (_, next) {
       if (next is AuthSuccess) context.go('/dashboard');
       if (next is AuthError) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(next.message)));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(next.mensagem)));
       }
     });
 
@@ -46,7 +46,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
-                  controller: _password,
+                  controller: _senha,
                   obscureText: _obscure,
                   decoration: InputDecoration(
                     labelText: 'Senha',
@@ -64,7 +64,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       : () {
                           if (_form.currentState!.validate()) {
                             ref.read(authViewModelProvider.notifier)
-                                .login(_email.text.trim(), _password.text);
+                                .login(_email.text.trim(), _senha.text);
                           }
                         },
                   child: state is AuthLoading

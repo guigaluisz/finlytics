@@ -7,7 +7,6 @@ import '../../domain/entities/auth_session.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../domain/usecases/login_usecase.dart';
 
-// --- DI providers ---
 final secureStorageProvider = Provider((_) => SecureStorage());
 final dioClientProvider = Provider((ref) => DioClient(ref.watch(secureStorageProvider)));
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
@@ -16,7 +15,6 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
 });
 final loginUseCaseProvider = Provider((ref) => LoginUseCase(ref.watch(authRepositoryProvider)));
 
-/// Estado da tela de autenticação.
 sealed class AuthState {
   const AuthState();
 }
@@ -27,8 +25,8 @@ class AuthSuccess extends AuthState {
   const AuthSuccess(this.session);
 }
 class AuthError extends AuthState {
-  final String message;
-  const AuthError(this.message);
+  final String mensagem;
+  const AuthError(this.mensagem);
 }
 
 /// ViewModel (MVVM): expõe estado imutável à View, sem regra de negócio.
@@ -37,22 +35,22 @@ class AuthViewModel extends StateNotifier<AuthState> {
   final AuthRepository _repo;
   AuthViewModel(this._login, this._repo) : super(const AuthInitial());
 
-  Future<void> login(String email, String password) async {
+  Future<void> login(String email, String senha) async {
     state = const AuthLoading();
-    final result = await _login(LoginParams(email, password));
+    final result = await _login(LoginParams(email, senha));
     state = result.fold((f) => AuthError(f.message), (s) => AuthSuccess(s));
   }
 
   Future<void> register({
-    required String name,
-    String? lastName,
+    required String nome,
+    String? sobrenome,
     required String email,
-    String? phone,
-    required String password,
+    String? telefone,
+    required String senha,
   }) async {
     state = const AuthLoading();
     final result = await _repo.register(
-      name: name, lastName: lastName, email: email, phone: phone, password: password,
+      nome: nome, sobrenome: sobrenome, email: email, telefone: telefone, senha: senha,
     );
     state = result.fold((f) => AuthError(f.message), (s) => AuthSuccess(s));
   }

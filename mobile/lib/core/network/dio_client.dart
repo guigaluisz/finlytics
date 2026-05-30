@@ -1,14 +1,23 @@
 import 'package:dio/dio.dart';
 import '../storage/secure_storage.dart';
 
-/// Cliente HTTP com interceptors de auth e refresh transparente.
+/// URL base da API. Sobrescreva com --dart-define=API_BASE=...
+/// - Web / iOS Simulator: http://localhost:3000/v1
+/// - Emulador Android:    http://10.0.2.2:3000/v1  (10.0.2.2 = localhost do host)
+/// - Dispositivo físico:  http://SEU_IP_LAN:3000/v1
+const String kApiBase = String.fromEnvironment(
+  'API_BASE',
+  defaultValue: 'http://localhost:3000/v1',
+);
+
+/// Cliente HTTP com interceptors de autenticação.
 class DioClient {
   final Dio dio;
   final SecureStorage storage;
 
-  DioClient(this.storage, {String baseUrl = 'https://api.finlytics.app/v1'})
+  DioClient(this.storage, {String? baseUrl})
       : dio = Dio(BaseOptions(
-          baseUrl: baseUrl,
+          baseUrl: baseUrl ?? kApiBase,
           connectTimeout: const Duration(seconds: 15),
           receiveTimeout: const Duration(seconds: 15),
         )) {
@@ -19,10 +28,6 @@ class DioClient {
           options.headers['Authorization'] = 'Bearer $token';
         }
         handler.next(options);
-      },
-      onError: (e, handler) async {
-        // 401 -> tentar refresh (omitido por brevidade no scaffold).
-        handler.next(e);
       },
     ));
   }

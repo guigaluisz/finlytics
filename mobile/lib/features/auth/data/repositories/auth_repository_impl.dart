@@ -12,10 +12,10 @@ class AuthRepositoryImpl implements AuthRepository {
   AuthRepositoryImpl(this.remote, this.storage);
 
   @override
-  Future<Either<Failure, AuthSession>> login(String email, String password) async {
+  Future<Either<Failure, AuthSession>> login(String email, String senha) async {
     try {
-      final session = await remote.login(email, password);
-      await storage.saveTokens(session.accessToken, session.refreshToken);
+      final session = await remote.login(email, senha);
+      await storage.saveTokens(session.tokenAcesso, session.tokenAtualizacao);
       return Right(session);
     } on DioException catch (e) {
       if (e.response?.statusCode == 401) return const Left(AuthFailure());
@@ -26,21 +26,21 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<Either<Failure, AuthSession>> register({
-    required String name,
-    String? lastName,
+    required String nome,
+    String? sobrenome,
     required String email,
-    String? phone,
-    required String password,
+    String? telefone,
+    required String senha,
   }) async {
     try {
       final session = await remote.register({
-        'name': name,
-        'lastName': lastName,
+        'nome': nome,
+        'sobrenome': sobrenome,
         'email': email,
-        'phone': phone,
-        'password': password,
+        'telefone': telefone,
+        'senha': senha,
       });
-      await storage.saveTokens(session.accessToken, session.refreshToken);
+      await storage.saveTokens(session.tokenAcesso, session.tokenAtualizacao);
       return Right(session);
     } on DioException catch (e) {
       if (e.response?.statusCode == 409) {
