@@ -12,6 +12,7 @@ abstract class AppColors {
   static const surfaceLight = Color(0xFFFFFFFF);
   static const onSurfaceLight = Color(0xFF1A1D23);
   static const mutedLight = Color(0xFF6B7280);
+  static const borderLight = Color(0xFFE5E7EB);
 
   // Dark
   static const bgDark = Color(0xFF0E1116);
