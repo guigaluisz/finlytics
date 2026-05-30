@@ -25,9 +25,10 @@ describe('TransactionsService', () => {
     expect(repo.create).toHaveBeenCalledWith('u1', expect.objectContaining({ type: 'expense', value: 32.5 }));
   });
 
-  it('rejeita valor menor ou igual a zero', async () => {
+  it('rejeita valor menor ou igual a zero', () => {
     const dto: any = { type: 'expense', value: 0, date: '2026-05-29' };
-    await expect(service.create('u1', dto)).rejects.toBeInstanceOf(BusinessRuleError);
+    // create() valida o valor de forma síncrona (lança antes de retornar a Promise)
+    expect(() => service.create('u1', dto)).toThrow(BusinessRuleError);
   });
 
   it('findOne lança NotFound quando não existe', async () => {
@@ -47,5 +48,19 @@ describe('TransactionsService', () => {
     repo.findById.mockResolvedValue({ id: 't1' });
     await service.remove('u1', 't1');
     expect(repo.softDelete).toHaveBeenCalledWith('u1', 't1');
+  });
+  it('list delega ao repositório com os filtros', async () => {
+    repo.list.mockResolvedValue({ items: [], total: 0 });
+    const filters: any = { page: 1, limit: 20 };
+    const res = await service.list('u1', filters);
+    expect(res).toEqual({ items: [], total: 0 });
+    expect(repo.list).toHaveBeenCalledWith('u1', filters);
+  });
+
+  it('summary delega ao repositório', async () => {
+    repo.summary.mockResolvedValue({ income: 100, expense: 40 });
+    const res = await service.summary('u1', '2026-05-01', '2026-05-31');
+    expect(res.income).toBe(100);
+    expect(repo.summary).toHaveBeenCalledWith('u1', '2026-05-01', '2026-05-31');
   });
 });

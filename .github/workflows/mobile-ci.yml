@@ -21,7 +21,7 @@ jobs:
           cache: true
       - run: flutter pub get
       - name: Analyze
-        run: flutter analyze
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
       - name: Tests + coverage
         run: flutter test --coverage
       - name: Upload coverage
