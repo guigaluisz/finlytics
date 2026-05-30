@@ -2,25 +2,25 @@ import { IsEmail, IsOptional, IsString, Matches, MinLength } from 'class-validat
 import { ApiProperty } from '@nestjs/swagger';
 
 export class RegisterDto {
-  @ApiProperty() @IsString() @MinLength(2) name!: string;
-  @ApiProperty({ required: false }) @IsOptional() @IsString() lastName?: string;
+  @ApiProperty() @IsString() @MinLength(2) nome!: string;
+  @ApiProperty({ required: false }) @IsOptional() @IsString() sobrenome?: string;
   @ApiProperty() @IsEmail() email!: string;
-  @ApiProperty({ required: false }) @IsOptional() @IsString() phone?: string;
+  @ApiProperty({ required: false }) @IsOptional() @IsString() telefone?: string;
   @ApiProperty()
   @MinLength(8)
   @Matches(/^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).+$/, {
     message: 'Senha deve ter ao menos 1 maiúscula, 1 número e 1 símbolo',
   })
-  password!: string;
+  senha!: string;
 }
 
 export class LoginDto {
   @ApiProperty() @IsEmail() email!: string;
-  @ApiProperty() @IsString() password!: string;
+  @ApiProperty() @IsString() senha!: string;
 }
 
 export class RefreshDto {
-  @ApiProperty() @IsString() refreshToken!: string;
+  @ApiProperty() @IsString() tokenAtualizacao!: string;
 }
 
 export class ForgotPasswordDto {
@@ -29,5 +29,5 @@ export class ForgotPasswordDto {
 
 export class ResetPasswordDto {
   @ApiProperty() @IsString() token!: string;
-  @ApiProperty() @MinLength(8) password!: string;
+  @ApiProperty() @MinLength(8) senha!: string;
 }

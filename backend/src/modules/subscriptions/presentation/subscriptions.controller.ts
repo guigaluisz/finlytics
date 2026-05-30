@@ -6,36 +6,35 @@ import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import { PrismaService } from '../../../infra/database/prisma.service';
 
 class VerifyDto {
-  @IsString() provider!: string; // apple | google
-  @IsString() receipt!: string;
-  @IsString() plan!: string; // premium_monthly | premium_annual
+  @IsString() provedor!: string; // apple | google
+  @IsString() recibo!: string;
+  @IsString() plano!: string; // premium_mensal | premium_anual
 }
 
-@ApiTags('subscriptions')
+@ApiTags('assinaturas')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
-@Controller('subscriptions')
+@Controller('assinaturas')
 export class SubscriptionsController {
   constructor(private readonly prisma: PrismaService) {}
 
-  @Get('me')
-  me(@CurrentUser('id') userId: string) {
-    return this.prisma.subscription.findUnique({ where: { userId } });
+  @Get('minha')
+  minha(@CurrentUser('id') usuarioId: string) {
+    return this.prisma.subscription.findUnique({ where: { usuarioId } });
   }
 
-  // Em produção: validar recibo junto à App Store/Play antes de ativar.
-  @Post('verify')
-  async verify(@CurrentUser('id') userId: string, @Body() dto: VerifyDto) {
-    const expiration = new Date();
-    expiration.setMonth(expiration.getMonth() + (dto.plan === 'premium_annual' ? 12 : 1));
+  @Post('verificar')
+  async verificar(@CurrentUser('id') usuarioId: string, @Body() dto: VerifyDto) {
+    const dataExpiracao = new Date();
+    dataExpiracao.setMonth(dataExpiracao.getMonth() + (dto.plano === 'premium_anual' ? 12 : 1));
     return this.prisma.subscription.update({
-      where: { userId },
-      data: { plan: dto.plan as any, status: 'active', provider: dto.provider, expirationDate: expiration },
+      where: { usuarioId },
+      data: { plano: dto.plano as any, status: 'ativa', provedor: dto.provedor, dataExpiracao },
     });
   }
 
-  @Post('cancel')
-  cancel(@CurrentUser('id') userId: string) {
-    return this.prisma.subscription.update({ where: { userId }, data: { status: 'canceled' } });
+  @Post('cancelar')
+  cancelar(@CurrentUser('id') usuarioId: string) {
+    return this.prisma.subscription.update({ where: { usuarioId }, data: { status: 'cancelada' } });
   }
 }

@@ -5,49 +5,49 @@ import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import { TransactionsService } from '../application/transactions.service';
 import { CreateTransactionDto, UpdateTransactionDto } from './dtos';
 
-@ApiTags('transactions')
+@ApiTags('transacoes')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
-@Controller('transactions')
+@Controller('transacoes')
 export class TransactionsController {
   constructor(private readonly service: TransactionsService) {}
 
   @Post()
-  create(@CurrentUser('id') userId: string, @Body() dto: CreateTransactionDto) {
-    return this.service.create(userId, dto);
+  create(@CurrentUser('id') usuarioId: string, @Body() dto: CreateTransactionDto) {
+    return this.service.create(usuarioId, dto);
   }
 
   @Get()
   list(
-    @CurrentUser('id') userId: string,
-    @Query('type') type?: 'income' | 'expense',
-    @Query('categoryId') categoryId?: string,
-    @Query('from') from?: string,
-    @Query('to') to?: string,
-    @Query('q') q?: string,
-    @Query('page') page = 1,
-    @Query('limit') limit = 20,
+    @CurrentUser('id') usuarioId: string,
+    @Query('tipo') tipo?: 'receita' | 'despesa',
+    @Query('categoriaId') categoriaId?: string,
+    @Query('de') de?: string,
+    @Query('ate') ate?: string,
+    @Query('busca') busca?: string,
+    @Query('pagina') pagina = 1,
+    @Query('limite') limite = 20,
   ) {
-    return this.service.list(userId, { type, categoryId, from, to, q, page: Number(page), limit: Number(limit) });
+    return this.service.list(usuarioId, { tipo, categoriaId, de, ate, busca, pagina: Number(pagina), limite: Number(limite) });
   }
 
-  @Get('summary')
-  summary(@CurrentUser('id') userId: string, @Query('from') from: string, @Query('to') to: string) {
-    return this.service.summary(userId, from, to);
+  @Get('resumo')
+  resumo(@CurrentUser('id') usuarioId: string, @Query('de') de: string, @Query('ate') ate: string) {
+    return this.service.summary(usuarioId, de, ate);
   }
 
   @Get(':id')
-  findOne(@CurrentUser('id') userId: string, @Param('id') id: string) {
-    return this.service.findOne(userId, id);
+  findOne(@CurrentUser('id') usuarioId: string, @Param('id') id: string) {
+    return this.service.findOne(usuarioId, id);
   }
 
   @Patch(':id')
-  update(@CurrentUser('id') userId: string, @Param('id') id: string, @Body() dto: UpdateTransactionDto) {
-    return this.service.update(userId, id, dto);
+  update(@CurrentUser('id') usuarioId: string, @Param('id') id: string, @Body() dto: UpdateTransactionDto) {
+    return this.service.update(usuarioId, id, dto);
   }
 
   @Delete(':id')
-  remove(@CurrentUser('id') userId: string, @Param('id') id: string) {
-    return this.service.remove(userId, id);
+  remove(@CurrentUser('id') usuarioId: string, @Param('id') id: string) {
+    return this.service.remove(usuarioId, id);
   }
 }

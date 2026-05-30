@@ -3,13 +3,13 @@ import { ApiTags } from '@nestjs/swagger';
 import { AuthService } from '../application/auth.service';
 import { LoginDto, RefreshDto, RegisterDto, ForgotPasswordDto, ResetPasswordDto } from './dtos';
 
-@ApiTags('auth')
-@Controller('auth')
+@ApiTags('autenticacao')
+@Controller('autenticacao')
 export class AuthController {
   constructor(private readonly auth: AuthService) {}
 
-  @Post('register')
-  register(@Body() dto: RegisterDto) {
+  @Post('registrar')
+  registrar(@Body() dto: RegisterDto) {
     return this.auth.register(dto);
   }
 
@@ -19,27 +19,27 @@ export class AuthController {
     return this.auth.login(dto);
   }
 
-  @Post('refresh')
+  @Post('atualizar')
   @HttpCode(200)
-  refresh(@Body() dto: RefreshDto) {
-    return this.auth.refresh(dto.refreshToken);
+  atualizar(@Body() dto: RefreshDto) {
+    return this.auth.refresh(dto.tokenAtualizacao);
   }
 
-  @Post('logout')
+  @Post('sair')
   @HttpCode(204)
-  async logout(@Body() dto: RefreshDto) {
-    await this.auth.logout(dto.refreshToken);
+  async sair(@Body() dto: RefreshDto) {
+    await this.auth.logout(dto.tokenAtualizacao);
   }
 
-  @Post('forgot-password')
+  @Post('esqueci-senha')
   @HttpCode(200)
-  forgot(@Body() dto: ForgotPasswordDto) {
+  esqueciSenha(@Body() dto: ForgotPasswordDto) {
     return this.auth.forgotPassword(dto.email);
   }
 
-  @Post('reset-password')
+  @Post('redefinir-senha')
   @HttpCode(200)
-  reset(@Body() dto: ResetPasswordDto) {
-    return this.auth.resetPassword(dto.token, dto.password);
+  redefinirSenha(@Body() dto: ResetPasswordDto) {
+    return this.auth.resetPassword(dto.token, dto.senha);
   }
 }

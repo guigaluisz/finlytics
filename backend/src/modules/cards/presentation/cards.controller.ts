@@ -6,57 +6,56 @@ import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import { PrismaService } from '../../../infra/database/prisma.service';
 
 class CardDto {
-  @IsString() bank!: string;
-  @IsString() brand!: string;
-  @IsNumber() creditLimit!: number;
-  @IsInt() @Min(1) @Max(31) closingDay!: number;
-  @IsInt() @Min(1) @Max(31) dueDay!: number;
+  @IsString() banco!: string;
+  @IsString() bandeira!: string;
+  @IsNumber() limite!: number;
+  @IsInt() @Min(1) @Max(31) diaFechamento!: number;
+  @IsInt() @Min(1) @Max(31) diaVencimento!: number;
 }
 
-@ApiTags('cards')
+@ApiTags('cartoes')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
-@Controller('cards')
+@Controller('cartoes')
 export class CardsController {
   constructor(private readonly prisma: PrismaService) {}
 
   @Get()
-  list(@CurrentUser('id') userId: string) {
-    return this.prisma.creditCard.findMany({ where: { userId, deletedAt: null } });
+  list(@CurrentUser('id') usuarioId: string) {
+    return this.prisma.creditCard.findMany({ where: { usuarioId, excluidoEm: null } });
   }
 
   @Post()
-  create(@CurrentUser('id') userId: string, @Body() dto: CardDto) {
-    return this.prisma.creditCard.create({ data: { ...dto, userId } });
+  create(@CurrentUser('id') usuarioId: string, @Body() dto: CardDto) {
+    return this.prisma.creditCard.create({ data: { ...dto, usuarioId } });
   }
 
   @Patch(':id')
-  update(@CurrentUser('id') userId: string, @Param('id') id: string, @Body() dto: Partial<CardDto>) {
-    return this.prisma.creditCard.updateMany({ where: { id, userId }, data: dto });
+  update(@CurrentUser('id') usuarioId: string, @Param('id') id: string, @Body() dto: Partial<CardDto>) {
+    return this.prisma.creditCard.updateMany({ where: { id, usuarioId }, data: dto });
   }
 
   @Delete(':id')
-  remove(@CurrentUser('id') userId: string, @Param('id') id: string) {
-    return this.prisma.creditCard.updateMany({ where: { id, userId }, data: { deletedAt: new Date() } });
+  remove(@CurrentUser('id') usuarioId: string, @Param('id') id: string) {
+    return this.prisma.creditCard.updateMany({ where: { id, usuarioId }, data: { excluidoEm: new Date() } });
   }
 
-  // Fatura atual: soma despesas vinculadas ao cartão no ciclo corrente.
-  @Get(':id/invoice')
-  async invoice(@CurrentUser('id') userId: string, @Param('id') id: string) {
-    const card = await this.prisma.creditCard.findFirst({ where: { id, userId } });
-    if (!card) return null;
+  @Get(':id/fatura')
+  async fatura(@CurrentUser('id') usuarioId: string, @Param('id') id: string) {
+    const cartao = await this.prisma.creditCard.findFirst({ where: { id, usuarioId } });
+    if (!cartao) return null;
     const agg = await this.prisma.transaction.aggregate({
-      where: { userId, creditCardId: id, type: 'expense', deletedAt: null },
-      _sum: { value: true },
+      where: { usuarioId, cartaoId: id, tipo: 'despesa', excluidoEm: null },
+      _sum: { valor: true },
     });
-    const used = Number(agg._sum.value ?? 0);
-    const limit = Number(card.creditLimit);
+    const usado = Number(agg._sum.valor ?? 0);
+    const limite = Number(cartao.limite);
     return {
-      used,
-      available: limit - used,
-      limit,
-      closingDay: card.closingDay,
-      dueDay: card.dueDay,
+      usado,
+      disponivel: limite - usado,
+      limite,
+      diaFechamento: cartao.diaFechamento,
+      diaVencimento: cartao.diaVencimento,
     };
   }
 }

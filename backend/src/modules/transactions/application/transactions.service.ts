@@ -10,42 +10,42 @@ export class TransactionsService {
     @Inject(TRANSACTION_REPOSITORY) private readonly repo: TransactionRepository,
   ) {}
 
-  create(userId: string, dto: CreateTransactionDto) {
-    const money = Money.fromNumber(dto.value); // valida invariante (>0)
-    return this.repo.create(userId, {
-      type: dto.type,
-      value: money.amount,
-      categoryId: dto.categoryId,
-      creditCardId: dto.creditCardId,
-      date: new Date(dto.date),
-      description: dto.description,
+  create(usuarioId: string, dto: CreateTransactionDto) {
+    const valor = Money.fromNumber(dto.valor); // valida invariante (>0)
+    return this.repo.create(usuarioId, {
+      tipo: dto.tipo,
+      valor: valor.amount,
+      categoriaId: dto.categoriaId,
+      cartaoId: dto.cartaoId,
+      data: new Date(dto.data),
+      descricao: dto.descricao,
     });
   }
 
-  list(userId: string, filters: ListFilters) {
-    return this.repo.list(userId, filters);
+  list(usuarioId: string, filtros: ListFilters) {
+    return this.repo.list(usuarioId, filtros);
   }
 
-  async findOne(userId: string, id: string) {
-    const tx = await this.repo.findById(userId, id);
+  async findOne(usuarioId: string, id: string) {
+    const tx = await this.repo.findById(usuarioId, id);
     if (!tx) throw new NotFoundError('Transação');
     return tx;
   }
 
-  async update(userId: string, id: string, dto: UpdateTransactionDto) {
-    await this.findOne(userId, id);
+  async update(usuarioId: string, id: string, dto: UpdateTransactionDto) {
+    await this.findOne(usuarioId, id);
     const data: any = { ...dto };
-    if (dto.value !== undefined) data.value = Money.fromNumber(dto.value).amount;
-    if (dto.date) data.date = new Date(dto.date);
-    return this.repo.update(userId, id, data);
+    if (dto.valor !== undefined) data.valor = Money.fromNumber(dto.valor).amount;
+    if (dto.data) data.data = new Date(dto.data);
+    return this.repo.update(usuarioId, id, data);
   }
 
-  async remove(userId: string, id: string) {
-    await this.findOne(userId, id);
-    await this.repo.softDelete(userId, id);
+  async remove(usuarioId: string, id: string) {
+    await this.findOne(usuarioId, id);
+    await this.repo.softDelete(usuarioId, id);
   }
 
-  summary(userId: string, from: string, to: string) {
-    return this.repo.summary(userId, from, to);
+  summary(usuarioId: string, de: string, ate: string) {
+    return this.repo.summary(usuarioId, de, ate);
   }
 }

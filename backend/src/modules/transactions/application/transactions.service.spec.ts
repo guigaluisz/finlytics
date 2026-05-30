@@ -19,15 +19,14 @@ describe('TransactionsService', () => {
 
   it('cria despesa válida normalizando o valor', async () => {
     repo.create.mockResolvedValue({ id: 't1' });
-    const dto: any = { type: 'expense', value: 32.5, date: '2026-05-29', description: 'Almoço' };
+    const dto: any = { tipo: 'despesa', valor: 32.5, data: '2026-05-29', descricao: 'Almoço' };
     const res = await service.create('u1', dto);
     expect(res).toEqual({ id: 't1' });
-    expect(repo.create).toHaveBeenCalledWith('u1', expect.objectContaining({ type: 'expense', value: 32.5 }));
+    expect(repo.create).toHaveBeenCalledWith('u1', expect.objectContaining({ tipo: 'despesa', valor: 32.5 }));
   });
 
   it('rejeita valor menor ou igual a zero', () => {
-    const dto: any = { type: 'expense', value: 0, date: '2026-05-29' };
-    // create() valida o valor de forma síncrona (lança antes de retornar a Promise)
+    const dto: any = { tipo: 'despesa', valor: 0, data: '2026-05-29' };
     expect(() => service.create('u1', dto)).toThrow(BusinessRuleError);
   });
 
@@ -37,10 +36,10 @@ describe('TransactionsService', () => {
   });
 
   it('update recalcula valor e exige posse', async () => {
-    repo.findById.mockResolvedValue({ id: 't1', userId: 'u1' });
-    repo.update.mockResolvedValue({ id: 't1', value: 50 });
-    const res = await service.update('u1', 't1', { value: 50 } as any);
-    expect(res.value).toBe(50);
+    repo.findById.mockResolvedValue({ id: 't1', usuarioId: 'u1' });
+    repo.update.mockResolvedValue({ id: 't1', valor: 50 });
+    const res = await service.update('u1', 't1', { valor: 50 } as any);
+    expect(res.valor).toBe(50);
     expect(repo.update).toHaveBeenCalled();
   });
 
@@ -49,18 +48,19 @@ describe('TransactionsService', () => {
     await service.remove('u1', 't1');
     expect(repo.softDelete).toHaveBeenCalledWith('u1', 't1');
   });
+
   it('list delega ao repositório com os filtros', async () => {
-    repo.list.mockResolvedValue({ items: [], total: 0 });
-    const filters: any = { page: 1, limit: 20 };
-    const res = await service.list('u1', filters);
-    expect(res).toEqual({ items: [], total: 0 });
-    expect(repo.list).toHaveBeenCalledWith('u1', filters);
+    repo.list.mockResolvedValue({ itens: [], total: 0 });
+    const filtros: any = { pagina: 1, limite: 20 };
+    const res = await service.list('u1', filtros);
+    expect(res).toEqual({ itens: [], total: 0 });
+    expect(repo.list).toHaveBeenCalledWith('u1', filtros);
   });
 
   it('summary delega ao repositório', async () => {
-    repo.summary.mockResolvedValue({ income: 100, expense: 40 });
+    repo.summary.mockResolvedValue({ receitas: 100, despesas: 40 });
     const res = await service.summary('u1', '2026-05-01', '2026-05-31');
-    expect(res.income).toBe(100);
+    expect(res.receitas).toBe(100);
     expect(repo.summary).toHaveBeenCalledWith('u1', '2026-05-01', '2026-05-31');
   });
 });

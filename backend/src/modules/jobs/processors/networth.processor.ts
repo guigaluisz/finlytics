@@ -4,38 +4,37 @@ import { Job } from 'bullmq';
 import { PrismaService } from '../../../infra/database/prisma.service';
 import { QUEUES } from '../../../infra/queue/queues';
 
-/** Snapshot patrimonial mensal: ativos - passivos por usuário. */
 @Processor(QUEUES.NETWORTH)
 export class NetWorthProcessor extends WorkerHost {
   private readonly logger = new Logger('NetWorthProcessor');
   constructor(private readonly prisma: PrismaService) { super(); }
 
   async process(_job: Job): Promise<void> {
-    const users = await this.prisma.user.findMany({ where: { deletedAt: null }, select: { id: true } });
-    const monthStart = new Date();
-    monthStart.setDate(1);
-    monthStart.setHours(0, 0, 0, 0);
+    const usuarios = await this.prisma.user.findMany({ where: { excluidoEm: null }, select: { id: true } });
+    const inicioMes = new Date();
+    inicioMes.setDate(1);
+    inicioMes.setHours(0, 0, 0, 0);
 
-    for (const u of users) {
-      const accounts = await this.prisma.account.aggregate({ where: { userId: u.id }, _sum: { balance: true } });
-      const investments = await this.prisma.investment.findMany({ where: { userId: u.id } });
-      const invValue = investments.reduce(
-        (acc, i) => acc + Number(i.quantity) * Number(i.currentPrice ?? i.averagePrice), 0);
-      const cardUsage = await this.prisma.transaction.aggregate({
-        where: { userId: u.id, type: 'expense', creditCardId: { not: null }, deletedAt: null },
-        _sum: { value: true },
+    for (const u of usuarios) {
+      const contas = await this.prisma.account.aggregate({ where: { usuarioId: u.id }, _sum: { saldo: true } });
+      const investimentos = await this.prisma.investment.findMany({ where: { usuarioId: u.id } });
+      const valorInv = investimentos.reduce(
+        (acc, i) => acc + Number(i.quantidade) * Number(i.precoAtual ?? i.precoMedio), 0);
+      const usoCartao = await this.prisma.transaction.aggregate({
+        where: { usuarioId: u.id, tipo: 'despesa', cartaoId: { not: null }, excluidoEm: null },
+        _sum: { valor: true },
       });
 
-      const assets = Number(accounts._sum.balance ?? 0) + invValue;
-      const liabilities = Number(cardUsage._sum.value ?? 0);
-      const netWorth = assets - liabilities;
+      const ativos = Number(contas._sum.saldo ?? 0) + valorInv;
+      const passivos = Number(usoCartao._sum.valor ?? 0);
+      const patrimonioLiquido = ativos - passivos;
 
       await this.prisma.netWorthSnapshot.upsert({
-        where: { userId_snapshotMonth: { userId: u.id, snapshotMonth: monthStart } },
-        update: { assets, liabilities, netWorth },
-        create: { userId: u.id, snapshotMonth: monthStart, assets, liabilities, netWorth },
+        where: { usuarioId_mesReferencia: { usuarioId: u.id, mesReferencia: inicioMes } },
+        update: { ativos, passivos, patrimonioLiquido },
+        create: { usuarioId: u.id, mesReferencia: inicioMes, ativos, passivos, patrimonioLiquido },
       });
     }
-    this.logger.log(`Snapshots patrimoniais gerados para ${users.length} usuários`);
+    this.logger.log(`Snapshots patrimoniais gerados para ${usuarios.length} usuários`);
   }
 }

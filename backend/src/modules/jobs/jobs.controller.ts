@@ -5,27 +5,27 @@ import { Queue } from 'bullmq';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { QUEUES } from '../../infra/queue/queues';
 
-@ApiTags('jobs')
+@ApiTags('tarefas')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
-@Controller('jobs')
+@Controller('tarefas')
 export class JobsController {
   constructor(
-    @InjectQueue(QUEUES.ALERTS) private readonly alerts: Queue,
-    @InjectQueue(QUEUES.QUOTES) private readonly quotes: Queue,
-    @InjectQueue(QUEUES.INVOICES) private readonly invoices: Queue,
-    @InjectQueue(QUEUES.NETWORTH) private readonly networth: Queue,
+    @InjectQueue(QUEUES.ALERTS) private readonly alertas: Queue,
+    @InjectQueue(QUEUES.QUOTES) private readonly cotacoes: Queue,
+    @InjectQueue(QUEUES.INVOICES) private readonly faturas: Queue,
+    @InjectQueue(QUEUES.NETWORTH) private readonly patrimonio: Queue,
   ) {}
 
-  @Post('run/alerts')
-  async runAlerts() { await this.alerts.add('manual-alerts', {}); return { queued: 'alerts' }; }
+  @Post('executar/alertas')
+  async execAlertas() { await this.alertas.add('manual-alertas', {}); return { enfileirado: 'alertas' }; }
 
-  @Post('run/quotes')
-  async runQuotes() { await this.quotes.add('manual-quotes', {}); return { queued: 'quotes' }; }
+  @Post('executar/cotacoes')
+  async execCotacoes() { await this.cotacoes.add('manual-cotacoes', {}); return { enfileirado: 'cotacoes' }; }
 
-  @Post('run/invoices')
-  async runInvoices() { await this.invoices.add('manual-invoices', {}); return { queued: 'invoices' }; }
+  @Post('executar/faturas')
+  async execFaturas() { await this.faturas.add('manual-faturas', {}); return { enfileirado: 'faturas' }; }
 
-  @Post('run/networth')
-  async runNetworth() { await this.networth.add('manual-networth', {}); return { queued: 'networth' }; }
+  @Post('executar/patrimonio')
+  async execPatrimonio() { await this.patrimonio.add('manual-patrimonio', {}); return { enfileirado: 'patrimonio' }; }
 }

@@ -4,25 +4,25 @@ import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import { PrismaService } from '../../../infra/database/prisma.service';
 
-@ApiTags('alerts')
+@ApiTags('alertas')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
-@Controller('alerts')
+@Controller('alertas')
 export class AlertsController {
   constructor(private readonly prisma: PrismaService) {}
 
   @Get()
-  list(@CurrentUser('id') userId: string) {
-    return this.prisma.alert.findMany({ where: { userId }, orderBy: { createdAt: 'desc' } });
+  list(@CurrentUser('id') usuarioId: string) {
+    return this.prisma.alert.findMany({ where: { usuarioId }, orderBy: { criadoEm: 'desc' } });
   }
 
-  @Patch(':id/read')
-  read(@CurrentUser('id') userId: string, @Param('id') id: string) {
-    return this.prisma.alert.updateMany({ where: { id, userId }, data: { read: true } });
+  @Patch(':id/ler')
+  ler(@CurrentUser('id') usuarioId: string, @Param('id') id: string) {
+    return this.prisma.alert.updateMany({ where: { id, usuarioId }, data: { lida: true } });
   }
 
-  @Post('read-all')
-  readAll(@CurrentUser('id') userId: string) {
-    return this.prisma.alert.updateMany({ where: { userId, read: false }, data: { read: true } });
+  @Post('ler-todos')
+  lerTodos(@CurrentUser('id') usuarioId: string) {
+    return this.prisma.alert.updateMany({ where: { usuarioId, lida: false }, data: { lida: true } });
   }
 }

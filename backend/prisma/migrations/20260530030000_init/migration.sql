@@ -1,239 +1,222 @@
--- Finlytics — migration inicial (cria todo o schema)
--- Aplicar com: npx prisma migrate deploy   (ou rodar este SQL via psql)
-
--- Extensão para gen_random_uuid() (nativa no PostgreSQL 13+; pgcrypto como fallback)
+-- Finlytics — migration inicial (PT). Aplicar com: npx prisma migrate deploy (ou reset)
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
--- ====================== ENUMS ======================
-CREATE TYPE "TransactionType"   AS ENUM ('income', 'expense');
-CREATE TYPE "CategoryType"      AS ENUM ('income', 'expense', 'both');
-CREATE TYPE "AssetType"         AS ENUM ('cdb', 'lci', 'lca', 'tesouro', 'fii', 'stock', 'etf', 'intl');
-CREATE TYPE "GoalStatus"        AS ENUM ('active', 'completed', 'canceled');
-CREATE TYPE "SubscriptionPlan"  AS ENUM ('free', 'premium_monthly', 'premium_annual');
-CREATE TYPE "SubscriptionStatus" AS ENUM ('active', 'trialing', 'past_due', 'canceled', 'expired');
-CREATE TYPE "AlertType"         AS ENUM ('budget', 'invoice', 'goal', 'system');
+-- ENUMS (nomes de tipo internos em inglês; valores em português)
+CREATE TYPE "TransactionType"    AS ENUM ('receita', 'despesa');
+CREATE TYPE "CategoryType"       AS ENUM ('receita', 'despesa', 'ambos');
+CREATE TYPE "AssetType"          AS ENUM ('cdb', 'lci', 'lca', 'tesouro', 'fii', 'acao', 'etf', 'internacional');
+CREATE TYPE "GoalStatus"         AS ENUM ('ativa', 'concluida', 'cancelada');
+CREATE TYPE "SubscriptionPlan"   AS ENUM ('gratuito', 'premium_mensal', 'premium_anual');
+CREATE TYPE "SubscriptionStatus" AS ENUM ('ativa', 'teste', 'atrasada', 'cancelada', 'expirada');
+CREATE TYPE "AlertType"          AS ENUM ('orcamento', 'fatura', 'meta', 'sistema');
 
--- ====================== USERS ======================
-CREATE TABLE "users" (
-  "id"              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  "name"            VARCHAR(50) NOT NULL,
-  "last_name"       VARCHAR(50),
-  "email"           VARCHAR(160) NOT NULL,
-  "password_hash"   TEXT NOT NULL,
-  "phone"           VARCHAR(20),
-  "avatar_url"      TEXT,
-  "locale"          VARCHAR(10) NOT NULL DEFAULT 'pt-BR',
-  "email_verified"  BOOLEAN NOT NULL DEFAULT false,
-  "mfa_enabled"     BOOLEAN NOT NULL DEFAULT false,
-  "mfa_secret"      TEXT,
-  "onboarding_goal" VARCHAR(30),
-  "income_range"    VARCHAR(30),
-  "risk_profile"    VARCHAR(20),
-  "created_at"      TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  "updated_at"      TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  "deleted_at"      TIMESTAMPTZ
+CREATE TABLE "usuarios" (
+  "id"               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  "nome"             VARCHAR(50) NOT NULL,
+  "sobrenome"        VARCHAR(50),
+  "email"            VARCHAR(160) NOT NULL,
+  "senha_hash"       TEXT NOT NULL,
+  "telefone"         VARCHAR(20),
+  "foto_url"         TEXT,
+  "idioma"           VARCHAR(10) NOT NULL DEFAULT 'pt-BR',
+  "email_verificado" BOOLEAN NOT NULL DEFAULT false,
+  "mfa_ativo"        BOOLEAN NOT NULL DEFAULT false,
+  "mfa_segredo"      TEXT,
+  "objetivo"         VARCHAR(30),
+  "faixa_renda"      VARCHAR(30),
+  "perfil_risco"     VARCHAR(20),
+  "criado_em"        TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "atualizado_em"    TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "excluido_em"      TIMESTAMPTZ
 );
-CREATE UNIQUE INDEX "users_email_key" ON "users" ("email");
+CREATE UNIQUE INDEX "usuarios_email_key" ON "usuarios" ("email");
 
--- ====================== ACCOUNTS ======================
-CREATE TABLE "accounts" (
+CREATE TABLE "contas" (
   "id"         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  "user_id"    UUID NOT NULL,
-  "name"       VARCHAR(60) NOT NULL,
-  "type"       VARCHAR(20) NOT NULL,
-  "balance"    DECIMAL(14,2) NOT NULL DEFAULT 0,
-  "currency"   VARCHAR(3) NOT NULL DEFAULT 'BRL',
-  "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT "accounts_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE
+  "usuario_id" UUID NOT NULL,
+  "nome"       VARCHAR(60) NOT NULL,
+  "tipo"       VARCHAR(20) NOT NULL,
+  "saldo"      DECIMAL(14,2) NOT NULL DEFAULT 0,
+  "moeda"      VARCHAR(3) NOT NULL DEFAULT 'BRL',
+  "criado_em"  TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "contas_usuario_id_fkey" FOREIGN KEY ("usuario_id") REFERENCES "usuarios"("id") ON DELETE CASCADE
 );
-CREATE INDEX "accounts_user_id_idx" ON "accounts" ("user_id");
+CREATE INDEX "contas_usuario_id_idx" ON "contas" ("usuario_id");
 
--- ====================== CATEGORIES ======================
-CREATE TABLE "categories" (
+CREATE TABLE "categorias" (
   "id"         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  "user_id"    UUID NOT NULL,
-  "name"       VARCHAR(60) NOT NULL,
-  "type"       "CategoryType" NOT NULL DEFAULT 'expense',
-  "color"      VARCHAR(9) NOT NULL DEFAULT '#6B7280',
-  "icon"       VARCHAR(40) NOT NULL DEFAULT 'tag',
-  "is_default" BOOLEAN NOT NULL DEFAULT false,
-  "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  "deleted_at" TIMESTAMPTZ,
-  CONSTRAINT "categories_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE
+  "usuario_id" UUID NOT NULL,
+  "nome"       VARCHAR(60) NOT NULL,
+  "tipo"       "CategoryType" NOT NULL DEFAULT 'despesa',
+  "cor"        VARCHAR(9) NOT NULL DEFAULT '#6B7280',
+  "icone"      VARCHAR(40) NOT NULL DEFAULT 'tag',
+  "padrao"     BOOLEAN NOT NULL DEFAULT false,
+  "criado_em"  TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "excluido_em" TIMESTAMPTZ,
+  CONSTRAINT "categorias_usuario_id_fkey" FOREIGN KEY ("usuario_id") REFERENCES "usuarios"("id") ON DELETE CASCADE
 );
-CREATE UNIQUE INDEX "categories_user_id_name_key" ON "categories" ("user_id", "name");
-CREATE INDEX "categories_user_id_idx" ON "categories" ("user_id");
+CREATE UNIQUE INDEX "categorias_usuario_id_nome_key" ON "categorias" ("usuario_id", "nome");
+CREATE INDEX "categorias_usuario_id_idx" ON "categorias" ("usuario_id");
 
--- ====================== CREDIT_CARDS ======================
-CREATE TABLE "credit_cards" (
+CREATE TABLE "cartoes" (
+  "id"             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  "usuario_id"     UUID NOT NULL,
+  "banco"          VARCHAR(60) NOT NULL,
+  "bandeira"       VARCHAR(30) NOT NULL,
+  "limite"         DECIMAL(14,2) NOT NULL,
+  "dia_fechamento" SMALLINT NOT NULL,
+  "dia_vencimento" SMALLINT NOT NULL,
+  "criado_em"      TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "excluido_em"    TIMESTAMPTZ,
+  CONSTRAINT "cartoes_usuario_id_fkey" FOREIGN KEY ("usuario_id") REFERENCES "usuarios"("id") ON DELETE CASCADE,
+  CONSTRAINT "cartoes_dia_fechamento_check" CHECK ("dia_fechamento" BETWEEN 1 AND 31),
+  CONSTRAINT "cartoes_dia_vencimento_check" CHECK ("dia_vencimento" BETWEEN 1 AND 31)
+);
+CREATE INDEX "cartoes_usuario_id_idx" ON "cartoes" ("usuario_id");
+
+CREATE TABLE "transacoes" (
   "id"           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  "user_id"      UUID NOT NULL,
-  "bank"         VARCHAR(60) NOT NULL,
-  "brand"        VARCHAR(30) NOT NULL,
-  "credit_limit" DECIMAL(14,2) NOT NULL,
-  "closing_day"  SMALLINT NOT NULL,
-  "due_day"      SMALLINT NOT NULL,
-  "created_at"   TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  "deleted_at"   TIMESTAMPTZ,
-  CONSTRAINT "credit_cards_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE,
-  CONSTRAINT "credit_cards_closing_day_check" CHECK ("closing_day" BETWEEN 1 AND 31),
-  CONSTRAINT "credit_cards_due_day_check" CHECK ("due_day" BETWEEN 1 AND 31)
+  "usuario_id"   UUID NOT NULL,
+  "categoria_id" UUID,
+  "conta_id"     UUID,
+  "cartao_id"    UUID,
+  "tipo"         "TransactionType" NOT NULL,
+  "valor"        DECIMAL(14,2) NOT NULL,
+  "descricao"    VARCHAR(255),
+  "data"         DATE NOT NULL,
+  "recorrencia"  VARCHAR(20),
+  "criado_em"    TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "atualizado_em" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "excluido_em"  TIMESTAMPTZ,
+  CONSTRAINT "transacoes_usuario_id_fkey" FOREIGN KEY ("usuario_id") REFERENCES "usuarios"("id") ON DELETE CASCADE,
+  CONSTRAINT "transacoes_categoria_id_fkey" FOREIGN KEY ("categoria_id") REFERENCES "categorias"("id") ON DELETE SET NULL,
+  CONSTRAINT "transacoes_conta_id_fkey" FOREIGN KEY ("conta_id") REFERENCES "contas"("id") ON DELETE SET NULL,
+  CONSTRAINT "transacoes_cartao_id_fkey" FOREIGN KEY ("cartao_id") REFERENCES "cartoes"("id") ON DELETE SET NULL,
+  CONSTRAINT "transacoes_valor_check" CHECK ("valor" > 0)
 );
-CREATE INDEX "credit_cards_user_id_idx" ON "credit_cards" ("user_id");
+CREATE INDEX "transacoes_usuario_id_data_idx" ON "transacoes" ("usuario_id", "data");
+CREATE INDEX "transacoes_usuario_id_categoria_id_data_idx" ON "transacoes" ("usuario_id", "categoria_id", "data");
+CREATE INDEX "transacoes_usuario_id_tipo_data_idx" ON "transacoes" ("usuario_id", "tipo", "data");
 
--- ====================== TRANSACTIONS ======================
-CREATE TABLE "transactions" (
-  "id"             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  "user_id"        UUID NOT NULL,
-  "category_id"    UUID,
-  "account_id"     UUID,
-  "credit_card_id" UUID,
-  "type"           "TransactionType" NOT NULL,
-  "value"          DECIMAL(14,2) NOT NULL,
-  "description"    VARCHAR(255),
-  "date"           DATE NOT NULL,
-  "recurrence"     VARCHAR(20),
-  "created_at"     TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  "updated_at"     TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  "deleted_at"     TIMESTAMPTZ,
-  CONSTRAINT "transactions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE,
-  CONSTRAINT "transactions_category_id_fkey" FOREIGN KEY ("category_id") REFERENCES "categories"("id") ON DELETE SET NULL,
-  CONSTRAINT "transactions_account_id_fkey" FOREIGN KEY ("account_id") REFERENCES "accounts"("id") ON DELETE SET NULL,
-  CONSTRAINT "transactions_credit_card_id_fkey" FOREIGN KEY ("credit_card_id") REFERENCES "credit_cards"("id") ON DELETE SET NULL,
-  CONSTRAINT "transactions_value_check" CHECK ("value" > 0)
-);
-CREATE INDEX "transactions_user_id_date_idx" ON "transactions" ("user_id", "date");
-CREATE INDEX "transactions_user_id_category_id_date_idx" ON "transactions" ("user_id", "category_id", "date");
-CREATE INDEX "transactions_user_id_type_date_idx" ON "transactions" ("user_id", "type", "date");
-
--- ====================== BUDGETS ======================
-CREATE TABLE "budgets" (
+CREATE TABLE "orcamentos" (
   "id"            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  "user_id"       UUID NOT NULL,
-  "category_id"   UUID NOT NULL,
-  "monthly_limit" DECIMAL(14,2) NOT NULL,
-  "month"         SMALLINT NOT NULL,
-  "year"          SMALLINT NOT NULL,
-  "created_at"    TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT "budgets_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE,
-  CONSTRAINT "budgets_category_id_fkey" FOREIGN KEY ("category_id") REFERENCES "categories"("id") ON DELETE CASCADE
+  "usuario_id"    UUID NOT NULL,
+  "categoria_id"  UUID NOT NULL,
+  "limite_mensal" DECIMAL(14,2) NOT NULL,
+  "mes"           SMALLINT NOT NULL,
+  "ano"           SMALLINT NOT NULL,
+  "criado_em"     TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "orcamentos_usuario_id_fkey" FOREIGN KEY ("usuario_id") REFERENCES "usuarios"("id") ON DELETE CASCADE,
+  CONSTRAINT "orcamentos_categoria_id_fkey" FOREIGN KEY ("categoria_id") REFERENCES "categorias"("id") ON DELETE CASCADE
 );
-CREATE UNIQUE INDEX "budgets_user_id_category_id_month_year_key" ON "budgets" ("user_id", "category_id", "month", "year");
-CREATE INDEX "budgets_user_id_idx" ON "budgets" ("user_id");
+CREATE UNIQUE INDEX "orcamentos_usuario_id_categoria_id_mes_ano_key" ON "orcamentos" ("usuario_id", "categoria_id", "mes", "ano");
+CREATE INDEX "orcamentos_usuario_id_idx" ON "orcamentos" ("usuario_id");
 
--- ====================== FINANCIAL_GOALS ======================
-CREATE TABLE "financial_goals" (
+CREATE TABLE "metas" (
+  "id"           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  "usuario_id"   UUID NOT NULL,
+  "titulo"       VARCHAR(80) NOT NULL,
+  "valor_alvo"   DECIMAL(14,2) NOT NULL,
+  "valor_atual"  DECIMAL(14,2) NOT NULL DEFAULT 0,
+  "data_alvo"    DATE NOT NULL,
+  "status"       "GoalStatus" NOT NULL DEFAULT 'ativa',
+  "criado_em"    TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "atualizado_em" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "metas_usuario_id_fkey" FOREIGN KEY ("usuario_id") REFERENCES "usuarios"("id") ON DELETE CASCADE,
+  CONSTRAINT "metas_valor_alvo_check" CHECK ("valor_alvo" > 0)
+);
+CREATE INDEX "metas_usuario_id_idx" ON "metas" ("usuario_id");
+
+CREATE TABLE "aportes" (
+  "id"        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  "meta_id"   UUID NOT NULL,
+  "valor"     DECIMAL(14,2) NOT NULL,
+  "data"      DATE NOT NULL,
+  "criado_em" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "aportes_meta_id_fkey" FOREIGN KEY ("meta_id") REFERENCES "metas"("id") ON DELETE CASCADE,
+  CONSTRAINT "aportes_valor_check" CHECK ("valor" > 0)
+);
+CREATE INDEX "aportes_meta_id_idx" ON "aportes" ("meta_id");
+
+CREATE TABLE "investimentos" (
+  "id"           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  "usuario_id"   UUID NOT NULL,
+  "tipo_ativo"   "AssetType" NOT NULL,
+  "ticker"       VARCHAR(20) NOT NULL,
+  "quantidade"   DECIMAL(18,6) NOT NULL,
+  "preco_medio"  DECIMAL(18,6) NOT NULL,
+  "preco_atual"  DECIMAL(18,6),
+  "moeda"        VARCHAR(3) NOT NULL DEFAULT 'BRL',
+  "criado_em"    TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "atualizado_em" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "investimentos_usuario_id_fkey" FOREIGN KEY ("usuario_id") REFERENCES "usuarios"("id") ON DELETE CASCADE,
+  CONSTRAINT "investimentos_quantidade_check" CHECK ("quantidade" > 0)
+);
+CREATE INDEX "investimentos_usuario_id_idx" ON "investimentos" ("usuario_id");
+CREATE INDEX "investimentos_usuario_id_tipo_ativo_idx" ON "investimentos" ("usuario_id", "tipo_ativo");
+
+CREATE TABLE "snapshots_patrimonio" (
+  "id"                 UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  "usuario_id"         UUID NOT NULL,
+  "mes_referencia"     DATE NOT NULL,
+  "ativos"             DECIMAL(16,2) NOT NULL,
+  "passivos"           DECIMAL(16,2) NOT NULL,
+  "patrimonio_liquido" DECIMAL(16,2) NOT NULL,
+  "criado_em"          TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "snapshots_patrimonio_usuario_id_fkey" FOREIGN KEY ("usuario_id") REFERENCES "usuarios"("id") ON DELETE CASCADE
+);
+CREATE UNIQUE INDEX "snapshots_patrimonio_usuario_id_mes_referencia_key" ON "snapshots_patrimonio" ("usuario_id", "mes_referencia");
+CREATE INDEX "snapshots_patrimonio_usuario_id_idx" ON "snapshots_patrimonio" ("usuario_id");
+
+CREATE TABLE "alertas" (
+  "id"         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  "usuario_id" UUID NOT NULL,
+  "tipo"       "AlertType" NOT NULL,
+  "titulo"     VARCHAR(120) NOT NULL,
+  "mensagem"   VARCHAR(300) NOT NULL,
+  "lida"       BOOLEAN NOT NULL DEFAULT false,
+  "criado_em"  TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "alertas_usuario_id_fkey" FOREIGN KEY ("usuario_id") REFERENCES "usuarios"("id") ON DELETE CASCADE
+);
+CREATE INDEX "alertas_usuario_id_lida_idx" ON "alertas" ("usuario_id", "lida");
+
+CREATE TABLE "assinaturas" (
   "id"             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  "user_id"        UUID NOT NULL,
-  "title"          VARCHAR(80) NOT NULL,
-  "target_amount"  DECIMAL(14,2) NOT NULL,
-  "current_amount" DECIMAL(14,2) NOT NULL DEFAULT 0,
-  "target_date"    DATE NOT NULL,
-  "status"         "GoalStatus" NOT NULL DEFAULT 'active',
-  "created_at"     TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  "updated_at"     TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT "financial_goals_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE,
-  CONSTRAINT "financial_goals_target_amount_check" CHECK ("target_amount" > 0)
+  "usuario_id"     UUID NOT NULL,
+  "plano"          "SubscriptionPlan" NOT NULL DEFAULT 'gratuito',
+  "status"         "SubscriptionStatus" NOT NULL DEFAULT 'ativa',
+  "provedor"       VARCHAR(20),
+  "id_externo"     TEXT,
+  "data_expiracao" TIMESTAMPTZ,
+  "criado_em"      TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "atualizado_em"  TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "assinaturas_usuario_id_fkey" FOREIGN KEY ("usuario_id") REFERENCES "usuarios"("id") ON DELETE CASCADE
 );
-CREATE INDEX "financial_goals_user_id_idx" ON "financial_goals" ("user_id");
+CREATE UNIQUE INDEX "assinaturas_usuario_id_key" ON "assinaturas" ("usuario_id");
 
--- ====================== GOAL_CONTRIBUTIONS ======================
-CREATE TABLE "goal_contributions" (
-  "id"         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  "goal_id"    UUID NOT NULL,
-  "amount"     DECIMAL(14,2) NOT NULL,
-  "date"       DATE NOT NULL,
-  "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT "goal_contributions_goal_id_fkey" FOREIGN KEY ("goal_id") REFERENCES "financial_goals"("id") ON DELETE CASCADE,
-  CONSTRAINT "goal_contributions_amount_check" CHECK ("amount" > 0)
+CREATE TABLE "tokens_atualizacao" (
+  "id"          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  "usuario_id"  UUID NOT NULL,
+  "token_hash"  TEXT NOT NULL,
+  "dispositivo" VARCHAR(120),
+  "expira_em"   TIMESTAMPTZ NOT NULL,
+  "revogado_em" TIMESTAMPTZ,
+  "criado_em"   TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "tokens_atualizacao_usuario_id_fkey" FOREIGN KEY ("usuario_id") REFERENCES "usuarios"("id") ON DELETE CASCADE
 );
-CREATE INDEX "goal_contributions_goal_id_idx" ON "goal_contributions" ("goal_id");
+CREATE INDEX "tokens_atualizacao_usuario_id_idx" ON "tokens_atualizacao" ("usuario_id");
+CREATE INDEX "tokens_atualizacao_token_hash_idx" ON "tokens_atualizacao" ("token_hash");
 
--- ====================== INVESTMENTS ======================
-CREATE TABLE "investments" (
-  "id"            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  "user_id"       UUID NOT NULL,
-  "asset_type"    "AssetType" NOT NULL,
-  "ticker"        VARCHAR(20) NOT NULL,
-  "quantity"      DECIMAL(18,6) NOT NULL,
-  "average_price" DECIMAL(18,6) NOT NULL,
-  "current_price" DECIMAL(18,6),
-  "currency"      VARCHAR(3) NOT NULL DEFAULT 'BRL',
-  "created_at"    TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  "updated_at"    TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT "investments_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE,
-  CONSTRAINT "investments_quantity_check" CHECK ("quantity" > 0)
+CREATE TABLE "logs_auditoria" (
+  "id"          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  "usuario_id"  UUID,
+  "acao"        VARCHAR(60) NOT NULL,
+  "entidade"    VARCHAR(60),
+  "entidade_id" VARCHAR(60),
+  "metadados"   JSONB,
+  "ip"          VARCHAR(45),
+  "criado_em"   TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "logs_auditoria_usuario_id_fkey" FOREIGN KEY ("usuario_id") REFERENCES "usuarios"("id") ON DELETE SET NULL
 );
-CREATE INDEX "investments_user_id_idx" ON "investments" ("user_id");
-CREATE INDEX "investments_user_id_asset_type_idx" ON "investments" ("user_id", "asset_type");
-
--- ====================== NET_WORTH_SNAPSHOTS ======================
-CREATE TABLE "net_worth_snapshots" (
-  "id"             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  "user_id"        UUID NOT NULL,
-  "snapshot_month" DATE NOT NULL,
-  "assets"         DECIMAL(16,2) NOT NULL,
-  "liabilities"    DECIMAL(16,2) NOT NULL,
-  "net_worth"      DECIMAL(16,2) NOT NULL,
-  "created_at"     TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT "net_worth_snapshots_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE
-);
-CREATE UNIQUE INDEX "net_worth_snapshots_user_id_snapshot_month_key" ON "net_worth_snapshots" ("user_id", "snapshot_month");
-CREATE INDEX "net_worth_snapshots_user_id_idx" ON "net_worth_snapshots" ("user_id");
-
--- ====================== ALERTS ======================
-CREATE TABLE "alerts" (
-  "id"         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  "user_id"    UUID NOT NULL,
-  "type"       "AlertType" NOT NULL,
-  "title"      VARCHAR(120) NOT NULL,
-  "message"    VARCHAR(300) NOT NULL,
-  "read"       BOOLEAN NOT NULL DEFAULT false,
-  "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT "alerts_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE
-);
-CREATE INDEX "alerts_user_id_read_idx" ON "alerts" ("user_id", "read");
-
--- ====================== SUBSCRIPTIONS ======================
-CREATE TABLE "subscriptions" (
-  "id"              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  "user_id"         UUID NOT NULL,
-  "plan"            "SubscriptionPlan" NOT NULL DEFAULT 'free',
-  "status"          "SubscriptionStatus" NOT NULL DEFAULT 'active',
-  "provider"        VARCHAR(20),
-  "external_id"     TEXT,
-  "expiration_date" TIMESTAMPTZ,
-  "created_at"      TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  "updated_at"      TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT "subscriptions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE
-);
-CREATE UNIQUE INDEX "subscriptions_user_id_key" ON "subscriptions" ("user_id");
-
--- ====================== REFRESH_TOKENS ======================
-CREATE TABLE "refresh_tokens" (
-  "id"         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  "user_id"    UUID NOT NULL,
-  "token_hash" TEXT NOT NULL,
-  "device"     VARCHAR(120),
-  "expires_at" TIMESTAMPTZ NOT NULL,
-  "revoked_at" TIMESTAMPTZ,
-  "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT "refresh_tokens_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE
-);
-CREATE INDEX "refresh_tokens_user_id_idx" ON "refresh_tokens" ("user_id");
-CREATE INDEX "refresh_tokens_token_hash_idx" ON "refresh_tokens" ("token_hash");
-
--- ====================== AUDIT_LOGS ======================
-CREATE TABLE "audit_logs" (
-  "id"         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  "user_id"    UUID,
-  "action"     VARCHAR(60) NOT NULL,
-  "entity"     VARCHAR(60),
-  "entity_id"  VARCHAR(60),
-  "metadata"   JSONB,
-  "ip"         VARCHAR(45),
-  "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT "audit_logs_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE SET NULL
-);
-CREATE INDEX "audit_logs_user_id_idx" ON "audit_logs" ("user_id");
-CREATE INDEX "audit_logs_action_idx" ON "audit_logs" ("action");
+CREATE INDEX "logs_auditoria_usuario_id_idx" ON "logs_auditoria" ("usuario_id");
+CREATE INDEX "logs_auditoria_acao_idx" ON "logs_auditoria" ("acao");

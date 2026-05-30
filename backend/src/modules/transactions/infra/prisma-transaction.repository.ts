@@ -6,48 +6,48 @@ import { ListFilters, TransactionRepository } from '../domain/transaction.reposi
 export class PrismaTransactionRepository implements TransactionRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  create(userId: string, data: any) {
-    return this.prisma.transaction.create({ data: { ...data, userId } });
+  create(usuarioId: string, data: any) {
+    return this.prisma.transaction.create({ data: { ...data, usuarioId } });
   }
 
-  findById(userId: string, id: string) {
-    return this.prisma.transaction.findFirst({ where: { id, userId, deletedAt: null } });
+  findById(usuarioId: string, id: string) {
+    return this.prisma.transaction.findFirst({ where: { id, usuarioId, excluidoEm: null } });
   }
 
-  async list(userId: string, f: ListFilters) {
-    const where: any = { userId, deletedAt: null };
-    if (f.type) where.type = f.type;
-    if (f.categoryId) where.categoryId = f.categoryId;
-    if (f.from || f.to) where.date = { gte: f.from ? new Date(f.from) : undefined, lte: f.to ? new Date(f.to) : undefined };
-    if (f.q) where.description = { contains: f.q, mode: 'insensitive' };
+  async list(usuarioId: string, f: ListFilters) {
+    const where: any = { usuarioId, excluidoEm: null };
+    if (f.tipo) where.tipo = f.tipo;
+    if (f.categoriaId) where.categoriaId = f.categoriaId;
+    if (f.de || f.ate) where.data = { gte: f.de ? new Date(f.de) : undefined, lte: f.ate ? new Date(f.ate) : undefined };
+    if (f.busca) where.descricao = { contains: f.busca, mode: 'insensitive' };
 
-    const [items, total] = await this.prisma.$transaction([
+    const [itens, total] = await this.prisma.$transaction([
       this.prisma.transaction.findMany({
         where,
-        orderBy: { date: 'desc' },
-        skip: (f.page - 1) * f.limit,
-        take: f.limit,
+        orderBy: { data: 'desc' },
+        skip: (f.pagina - 1) * f.limite,
+        take: f.limite,
       }),
       this.prisma.transaction.count({ where }),
     ]);
-    return { items, total };
+    return { itens, total };
   }
 
-  update(userId: string, id: string, data: any) {
+  update(usuarioId: string, id: string, data: any) {
     return this.prisma.transaction.update({ where: { id }, data });
   }
 
-  async softDelete(userId: string, id: string) {
-    await this.prisma.transaction.update({ where: { id }, data: { deletedAt: new Date() } });
+  async softDelete(usuarioId: string, id: string) {
+    await this.prisma.transaction.update({ where: { id }, data: { excluidoEm: new Date() } });
   }
 
-  async summary(userId: string, from: string, to: string) {
-    const rows = await this.prisma.transaction.groupBy({
-      by: ['type'],
-      where: { userId, deletedAt: null, date: { gte: new Date(from), lte: new Date(to) } },
-      _sum: { value: true },
+  async summary(usuarioId: string, de: string, ate: string) {
+    const linhas = await this.prisma.transaction.groupBy({
+      by: ['tipo'],
+      where: { usuarioId, excluidoEm: null, data: { gte: new Date(de), lte: new Date(ate) } },
+      _sum: { valor: true },
     });
-    const get = (t: string) => Number(rows.find((r) => r.type === t)?._sum.value ?? 0);
-    return { income: get('income'), expense: get('expense') };
+    const get = (t: string) => Number(linhas.find((r) => r.tipo === t)?._sum.valor ?? 0);
+    return { receitas: get('receita'), despesas: get('despesa') };
   }
 }

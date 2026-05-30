@@ -1,20 +1,20 @@
 export const TRANSACTION_REPOSITORY = Symbol('TRANSACTION_REPOSITORY');
 
 export interface ListFilters {
-  type?: 'income' | 'expense';
-  categoryId?: string;
-  from?: string;
-  to?: string;
-  q?: string;
-  page: number;
-  limit: number;
+  tipo?: 'receita' | 'despesa';
+  categoriaId?: string;
+  de?: string;
+  ate?: string;
+  busca?: string;
+  pagina: number;
+  limite: number;
 }
 
 export interface TransactionRepository {
-  create(userId: string, data: any): Promise<any>;
-  findById(userId: string, id: string): Promise<any | null>;
-  list(userId: string, filters: ListFilters): Promise<{ items: any[]; total: number }>;
-  update(userId: string, id: string, data: any): Promise<any>;
-  softDelete(userId: string, id: string): Promise<void>;
-  summary(userId: string, from: string, to: string): Promise<{ income: number; expense: number }>;
+  create(usuarioId: string, data: any): Promise<any>;
+  findById(usuarioId: string, id: string): Promise<any | null>;
+  list(usuarioId: string, filtros: ListFilters): Promise<{ itens: any[]; total: number }>;
+  update(usuarioId: string, id: string, data: any): Promise<any>;
+  softDelete(usuarioId: string, id: string): Promise<void>;
+  summary(usuarioId: string, de: string, ate: string): Promise<{ receitas: number; despesas: number }>;
 }

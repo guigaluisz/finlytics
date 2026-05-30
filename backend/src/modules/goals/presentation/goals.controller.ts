@@ -6,67 +6,67 @@ import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import { PrismaService } from '../../../infra/database/prisma.service';
 
 class GoalDto {
-  @IsString() title!: string;
-  @IsNumber() @IsPositive() targetAmount!: number;
-  @IsDateString() targetDate!: string;
+  @IsString() titulo!: string;
+  @IsNumber() @IsPositive() valorAlvo!: number;
+  @IsDateString() dataAlvo!: string;
 }
 class ContributionDto {
-  @IsNumber() @IsPositive() amount!: number;
+  @IsNumber() @IsPositive() valor!: number;
 }
 
-@ApiTags('goals')
+@ApiTags('metas')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
-@Controller('goals')
+@Controller('metas')
 export class GoalsController {
   constructor(private readonly prisma: PrismaService) {}
 
   @Get()
-  async list(@CurrentUser('id') userId: string) {
-    const goals = await this.prisma.financialGoal.findMany({ where: { userId } });
-    return goals.map((g) => this.withProgress(g));
+  async list(@CurrentUser('id') usuarioId: string) {
+    const metas = await this.prisma.financialGoal.findMany({ where: { usuarioId } });
+    return metas.map((m) => this.comProgresso(m));
   }
 
   @Post()
-  create(@CurrentUser('id') userId: string, @Body() dto: GoalDto) {
+  create(@CurrentUser('id') usuarioId: string, @Body() dto: GoalDto) {
     return this.prisma.financialGoal.create({
-      data: { userId, title: dto.title, targetAmount: dto.targetAmount, targetDate: new Date(dto.targetDate) },
+      data: { usuarioId, titulo: dto.titulo, valorAlvo: dto.valorAlvo, dataAlvo: new Date(dto.dataAlvo) },
     });
   }
 
-  @Post(':id/contributions')
-  async contribute(@CurrentUser('id') userId: string, @Param('id') id: string, @Body() dto: ContributionDto) {
-    const goal = await this.prisma.financialGoal.findFirst({ where: { id, userId } });
-    if (!goal) return null;
-    const current = Number(goal.currentAmount) + dto.amount;
-    const completed = current >= Number(goal.targetAmount);
-    await this.prisma.goalContribution.create({ data: { goalId: id, amount: dto.amount, date: new Date() } });
+  @Post(':id/aportes')
+  async aportar(@CurrentUser('id') usuarioId: string, @Param('id') id: string, @Body() dto: ContributionDto) {
+    const meta = await this.prisma.financialGoal.findFirst({ where: { id, usuarioId } });
+    if (!meta) return null;
+    const atual = Number(meta.valorAtual) + dto.valor;
+    const concluida = atual >= Number(meta.valorAlvo);
+    await this.prisma.goalContribution.create({ data: { metaId: id, valor: dto.valor, data: new Date() } });
     return this.prisma.financialGoal.update({
       where: { id },
-      data: { currentAmount: current, status: completed ? 'completed' : 'active' },
+      data: { valorAtual: atual, status: concluida ? 'concluida' : 'ativa' },
     });
   }
 
   @Patch(':id')
-  update(@CurrentUser('id') userId: string, @Param('id') id: string, @Body() dto: Partial<GoalDto>) {
+  update(@CurrentUser('id') usuarioId: string, @Param('id') id: string, @Body() dto: Partial<GoalDto>) {
     const data: any = { ...dto };
-    if (dto.targetDate) data.targetDate = new Date(dto.targetDate);
-    return this.prisma.financialGoal.updateMany({ where: { id, userId }, data });
+    if (dto.dataAlvo) data.dataAlvo = new Date(dto.dataAlvo);
+    return this.prisma.financialGoal.updateMany({ where: { id, usuarioId }, data });
   }
 
   @Delete(':id')
-  remove(@CurrentUser('id') userId: string, @Param('id') id: string) {
-    return this.prisma.financialGoal.deleteMany({ where: { id, userId } });
+  remove(@CurrentUser('id') usuarioId: string, @Param('id') id: string) {
+    return this.prisma.financialGoal.deleteMany({ where: { id, usuarioId } });
   }
 
-  private withProgress(g: any) {
-    const target = Number(g.targetAmount);
-    const current = Number(g.currentAmount);
-    const months = Math.max(1, Math.ceil((new Date(g.targetDate).getTime() - Date.now()) / (30 * 864e5)));
+  private comProgresso(m: any) {
+    const alvo = Number(m.valorAlvo);
+    const atual = Number(m.valorAtual);
+    const meses = Math.max(1, Math.ceil((new Date(m.dataAlvo).getTime() - Date.now()) / (30 * 864e5)));
     return {
-      ...g,
-      progress: target > 0 ? Math.min(100, Math.round((current / target) * 100)) : 0,
-      suggestedMonthlyContribution: Math.max(0, (target - current) / months),
+      ...m,
+      progresso: alvo > 0 ? Math.min(100, Math.round((atual / alvo) * 100)) : 0,
+      aporteMensalSugerido: Math.max(0, (alvo - atual) / meses),
     };
   }
 }

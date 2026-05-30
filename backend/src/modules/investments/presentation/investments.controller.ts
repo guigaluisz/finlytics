@@ -6,56 +6,56 @@ import { PremiumGuard } from '../../../common/guards/premium.guard';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import { PrismaService } from '../../../infra/database/prisma.service';
 
-const ASSET_TYPES = ['cdb', 'lci', 'lca', 'tesouro', 'fii', 'stock', 'etf', 'intl'];
+const TIPOS_ATIVO = ['cdb', 'lci', 'lca', 'tesouro', 'fii', 'acao', 'etf', 'internacional'];
 
 class InvestmentDto {
-  @IsEnum(ASSET_TYPES) assetType!: string;
+  @IsEnum(TIPOS_ATIVO) tipoAtivo!: string;
   @IsString() ticker!: string;
-  @IsNumber() @IsPositive() quantity!: number;
-  @IsNumber() @IsPositive() averagePrice!: number;
+  @IsNumber() @IsPositive() quantidade!: number;
+  @IsNumber() @IsPositive() precoMedio!: number;
 }
 
-@ApiTags('investments')
+@ApiTags('investimentos')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, PremiumGuard)
-@Controller('investments')
+@Controller('investimentos')
 export class InvestmentsController {
   constructor(private readonly prisma: PrismaService) {}
 
   @Get()
-  async list(@CurrentUser('id') userId: string) {
-    const items = await this.prisma.investment.findMany({ where: { userId } });
-    return items.map((i) => this.withReturns(i));
+  async list(@CurrentUser('id') usuarioId: string) {
+    const itens = await this.prisma.investment.findMany({ where: { usuarioId } });
+    return itens.map((i) => this.comRetorno(i));
   }
 
   @Post()
-  create(@CurrentUser('id') userId: string, @Body() dto: InvestmentDto) {
-    return this.prisma.investment.create({ data: { ...dto, userId } as any });
+  create(@CurrentUser('id') usuarioId: string, @Body() dto: InvestmentDto) {
+    return this.prisma.investment.create({ data: { ...dto, usuarioId } as any });
   }
 
   @Patch(':id')
-  update(@CurrentUser('id') userId: string, @Param('id') id: string, @Body() dto: Partial<InvestmentDto>) {
-    return this.prisma.investment.updateMany({ where: { id, userId }, data: dto as any });
+  update(@CurrentUser('id') usuarioId: string, @Param('id') id: string, @Body() dto: Partial<InvestmentDto>) {
+    return this.prisma.investment.updateMany({ where: { id, usuarioId }, data: dto as any });
   }
 
   @Delete(':id')
-  remove(@CurrentUser('id') userId: string, @Param('id') id: string) {
-    return this.prisma.investment.deleteMany({ where: { id, userId } });
+  remove(@CurrentUser('id') usuarioId: string, @Param('id') id: string) {
+    return this.prisma.investment.deleteMany({ where: { id, usuarioId } });
   }
 
-  private withReturns(i: any) {
-    const qty = Number(i.quantity);
-    const avg = Number(i.averagePrice);
-    const cur = Number(i.currentPrice ?? i.averagePrice);
-    const invested = qty * avg;
-    const marketValue = qty * cur;
-    const profit = marketValue - invested;
+  private comRetorno(i: any) {
+    const qtd = Number(i.quantidade);
+    const medio = Number(i.precoMedio);
+    const atual = Number(i.precoAtual ?? i.precoMedio);
+    const investido = qtd * medio;
+    const valorMercado = qtd * atual;
+    const lucro = valorMercado - investido;
     return {
       ...i,
-      invested,
-      marketValue,
-      profit,
-      profitability: invested > 0 ? (profit / invested) * 100 : 0,
+      investido,
+      valorMercado,
+      lucro,
+      rentabilidade: investido > 0 ? (lucro / investido) * 100 : 0,
     };
   }
 }

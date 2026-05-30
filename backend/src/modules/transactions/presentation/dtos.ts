@@ -2,17 +2,17 @@ import { IsDateString, IsEnum, IsNumber, IsOptional, IsPositive, IsString, IsUUI
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateTransactionDto {
-  @ApiProperty({ enum: ['income', 'expense'] }) @IsEnum(['income', 'expense']) type!: 'income' | 'expense';
-  @ApiProperty() @IsNumber() @IsPositive() value!: number;
-  @ApiProperty() @IsOptional() @IsUUID() categoryId?: string;
-  @ApiProperty() @IsOptional() @IsUUID() creditCardId?: string;
-  @ApiProperty() @IsDateString() date!: string;
-  @ApiProperty({ required: false }) @IsOptional() @IsString() description?: string;
+  @ApiProperty({ enum: ['receita', 'despesa'] }) @IsEnum(['receita', 'despesa']) tipo!: 'receita' | 'despesa';
+  @ApiProperty() @IsNumber() @IsPositive() valor!: number;
+  @ApiProperty({ required: false }) @IsOptional() @IsUUID() categoriaId?: string;
+  @ApiProperty({ required: false }) @IsOptional() @IsUUID() cartaoId?: string;
+  @ApiProperty() @IsDateString() data!: string;
+  @ApiProperty({ required: false }) @IsOptional() @IsString() descricao?: string;
 }
 
 export class UpdateTransactionDto {
-  @ApiProperty({ required: false }) @IsOptional() @IsNumber() @IsPositive() value?: number;
-  @ApiProperty({ required: false }) @IsOptional() @IsUUID() categoryId?: string;
-  @ApiProperty({ required: false }) @IsOptional() @IsDateString() date?: string;
-  @ApiProperty({ required: false }) @IsOptional() @IsString() description?: string;
+  @ApiProperty({ required: false }) @IsOptional() @IsNumber() @IsPositive() valor?: number;
+  @ApiProperty({ required: false }) @IsOptional() @IsUUID() categoriaId?: string;
+  @ApiProperty({ required: false }) @IsOptional() @IsDateString() data?: string;
+  @ApiProperty({ required: false }) @IsOptional() @IsString() descricao?: string;
 }

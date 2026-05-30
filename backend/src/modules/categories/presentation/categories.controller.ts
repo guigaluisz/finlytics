@@ -6,36 +6,36 @@ import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import { PrismaService } from '../../../infra/database/prisma.service';
 
 class CategoryDto {
-  @IsString() name!: string;
-  @IsEnum(['income', 'expense', 'both']) type!: 'income' | 'expense' | 'both';
-  @IsOptional() @IsString() color?: string;
-  @IsOptional() @IsString() icon?: string;
+  @IsString() nome!: string;
+  @IsEnum(['receita', 'despesa', 'ambos']) tipo!: 'receita' | 'despesa' | 'ambos';
+  @IsOptional() @IsString() cor?: string;
+  @IsOptional() @IsString() icone?: string;
 }
 
-@ApiTags('categories')
+@ApiTags('categorias')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
-@Controller('categories')
+@Controller('categorias')
 export class CategoriesController {
   constructor(private readonly prisma: PrismaService) {}
 
   @Get()
-  list(@CurrentUser('id') userId: string) {
-    return this.prisma.category.findMany({ where: { userId, deletedAt: null }, orderBy: { name: 'asc' } });
+  list(@CurrentUser('id') usuarioId: string) {
+    return this.prisma.category.findMany({ where: { usuarioId, excluidoEm: null }, orderBy: { nome: 'asc' } });
   }
 
   @Post()
-  create(@CurrentUser('id') userId: string, @Body() dto: CategoryDto) {
-    return this.prisma.category.create({ data: { ...dto, userId } });
+  create(@CurrentUser('id') usuarioId: string, @Body() dto: CategoryDto) {
+    return this.prisma.category.create({ data: { ...dto, usuarioId } });
   }
 
   @Patch(':id')
-  update(@CurrentUser('id') userId: string, @Param('id') id: string, @Body() dto: Partial<CategoryDto>) {
-    return this.prisma.category.updateMany({ where: { id, userId }, data: dto });
+  update(@CurrentUser('id') usuarioId: string, @Param('id') id: string, @Body() dto: Partial<CategoryDto>) {
+    return this.prisma.category.updateMany({ where: { id, usuarioId }, data: dto });
   }
 
   @Delete(':id')
-  remove(@CurrentUser('id') userId: string, @Param('id') id: string) {
-    return this.prisma.category.updateMany({ where: { id, userId }, data: { deletedAt: new Date() } });
+  remove(@CurrentUser('id') usuarioId: string, @Param('id') id: string) {
+    return this.prisma.category.updateMany({ where: { id, usuarioId }, data: { excluidoEm: new Date() } });
   }
 }

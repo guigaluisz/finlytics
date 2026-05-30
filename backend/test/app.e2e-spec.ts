@@ -20,7 +20,7 @@ describe('App (e2e)', () => {
     return request(app.getHttpServer()).get('/v1/health').expect(200);
   });
 
-  it('POST /v1/auth/login com payload inválido -> 400', () => {
-    return request(app.getHttpServer()).post('/v1/auth/login').send({ email: 'x' }).expect(400);
+  it('POST /v1/autenticacao/login com payload inválido -> 400', () => {
+    return request(app.getHttpServer()).post('/v1/autenticacao/login').send({ email: 'x' }).expect(400);
   });
 });

@@ -2,55 +2,54 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../infra/database/prisma.service';
 
 export interface ReportLine {
-  categoryId: string | null;
-  categoryName: string;
-  type: 'income' | 'expense';
+  categoriaId: string | null;
+  categoriaNome: string;
+  tipo: 'receita' | 'despesa';
   total: number;
 }
 export interface Report {
-  period: { from: string; to: string; label: string };
-  totals: { income: number; expense: number; balance: number };
-  lines: ReportLine[];
+  periodo: { de: string; ate: string; rotulo: string };
+  totais: { receitas: number; despesas: number; saldo: number };
+  linhas: ReportLine[];
 }
 
 @Injectable()
 export class ReportsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  monthly(userId: string, month: number, year: number) {
-    const from = new Date(year, month - 1, 1);
-    const to = new Date(year, month, 0);
-    return this.build(userId, from, to, `${String(month).padStart(2, '0')}/${year}`);
+  mensal(usuarioId: string, mes: number, ano: number) {
+    const de = new Date(ano, mes - 1, 1);
+    const ate = new Date(ano, mes, 0);
+    return this.build(usuarioId, de, ate, `${String(mes).padStart(2, '0')}/${ano}`);
   }
 
-  yearly(userId: string, year: number) {
-    return this.build(userId, new Date(year, 0, 1), new Date(year, 11, 31), `Ano ${year}`);
+  anual(usuarioId: string, ano: number) {
+    return this.build(usuarioId, new Date(ano, 0, 1), new Date(ano, 11, 31), `Ano ${ano}`);
   }
 
-  async build(userId: string, from: Date, to: Date, label: string): Promise<Report> {
-    const grouped = await this.prisma.transaction.groupBy({
-      by: ['categoryId', 'type'],
-      where: { userId, deletedAt: null, date: { gte: from, lte: to } },
-      _sum: { value: true },
+  async build(usuarioId: string, de: Date, ate: Date, rotulo: string): Promise<Report> {
+    const agrupado = await this.prisma.transaction.groupBy({
+      by: ['categoriaId', 'tipo'],
+      where: { usuarioId, excluidoEm: null, data: { gte: de, lte: ate } },
+      _sum: { valor: true },
     });
-    const categories = await this.prisma.category.findMany({ where: { userId } });
-    const nameOf = (id: string | null) =>
-      categories.find((c) => c.id === id)?.name ?? 'Sem categoria';
+    const categorias = await this.prisma.category.findMany({ where: { usuarioId } });
+    const nomeDe = (id: string | null) => categorias.find((c) => c.id === id)?.nome ?? 'Sem categoria';
 
-    const lines: ReportLine[] = grouped.map((g) => ({
-      categoryId: g.categoryId,
-      categoryName: nameOf(g.categoryId),
-      type: g.type as 'income' | 'expense',
-      total: Number(g._sum.value ?? 0),
+    const linhas: ReportLine[] = agrupado.map((g) => ({
+      categoriaId: g.categoriaId,
+      categoriaNome: nomeDe(g.categoriaId),
+      tipo: g.tipo as 'receita' | 'despesa',
+      total: Number(g._sum.valor ?? 0),
     }));
 
-    const income = lines.filter((l) => l.type === 'income').reduce((a, l) => a + l.total, 0);
-    const expense = lines.filter((l) => l.type === 'expense').reduce((a, l) => a + l.total, 0);
+    const receitas = linhas.filter((l) => l.tipo === 'receita').reduce((a, l) => a + l.total, 0);
+    const despesas = linhas.filter((l) => l.tipo === 'despesa').reduce((a, l) => a + l.total, 0);
 
     return {
-      period: { from: from.toISOString().slice(0, 10), to: to.toISOString().slice(0, 10), label },
-      totals: { income, expense, balance: income - expense },
-      lines: lines.sort((a, b) => b.total - a.total),
+      periodo: { de: de.toISOString().slice(0, 10), ate: ate.toISOString().slice(0, 10), rotulo },
+      totais: { receitas, despesas, saldo: receitas - despesas },
+      linhas: linhas.sort((a, b) => b.total - a.total),
     };
   }
 }

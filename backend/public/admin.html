@@ -6,14 +6,10 @@
 <title>Finlytics — Painel</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
-  :root{
-    --primary:#1F6FEB; --secondary:#00B37E; --danger:#E5484D; --warning:#F5A623;
-    --bg:#F7F8FA; --surface:#FFFFFF; --text:#1A1D23; --muted:#6B7280; --border:#E5E7EB;
-  }
+  :root{--primary:#1F6FEB;--secondary:#00B37E;--danger:#E5484D;--warning:#F5A623;--bg:#F7F8FA;--surface:#FFFFFF;--text:#1A1D23;--muted:#6B7280;--border:#E5E7EB;}
   *{box-sizing:border-box;margin:0;padding:0;font-family:'Inter',system-ui,Segoe UI,Roboto,sans-serif}
   body{background:var(--bg);color:var(--text)}
   .hidden{display:none!important}
-  /* Login */
   #login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
   .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
   .login-card{width:100%;max-width:380px;padding:32px}
@@ -25,7 +21,6 @@
   .btn-primary{background:var(--primary);color:#fff;padding:13px;width:100%;margin-top:20px}
   .btn-primary:disabled{opacity:.6;cursor:default}
   .err{color:var(--danger);font-size:13px;margin-top:10px;min-height:18px}
-  /* App */
   header{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:10}
   header .brand{font-size:18px;margin:0}
   .userbox{display:flex;align-items:center;gap:12px;font-size:14px;color:var(--muted)}
@@ -54,8 +49,6 @@
 </style>
 </head>
 <body>
-
-<!-- LOGIN -->
 <div id="login">
   <div class="card login-card">
     <div class="brand">◆ Finlytics</div>
@@ -63,85 +56,71 @@
     <label>E-mail</label>
     <input id="email" type="email" value="lucas2@teste.com" />
     <label>Senha</label>
-    <input id="password" type="password" value="Senha@123" />
+    <input id="senha" type="password" value="Senha@123" />
     <button id="loginBtn" class="btn-primary">Entrar</button>
     <div id="loginErr" class="err"></div>
   </div>
 </div>
 
-<!-- APP -->
 <div id="app" class="hidden">
   <header>
     <div class="brand">◆ Finlytics</div>
     <div class="userbox">
       <span id="who"></span>
-      <span id="plan" class="badge"></span>
+      <span id="plano" class="badge"></span>
       <button class="ghost" id="logoutBtn">Sair</button>
     </div>
   </header>
   <main>
     <div class="toolbar">
       <button class="ghost" id="refreshBtn">↻ Atualizar</button>
-      <button class="ghost" id="runJobs">▶ Rodar jobs (cotações/alertas/patrimônio)</button>
-      <span class="muted" id="periodLbl"></span>
+      <button class="ghost" id="runJobs">▶ Rodar tarefas (cotações/alertas/patrimônio)</button>
+      <span class="muted" id="periodoLbl"></span>
     </div>
-
     <div class="kpis">
-      <div class="card kpi"><div class="lbl">Saldo do mês</div><div class="val" id="kBalance">—</div></div>
-      <div class="card kpi"><div class="lbl">Receitas</div><div class="val pos" id="kIncome">—</div></div>
-      <div class="card kpi"><div class="lbl">Despesas</div><div class="val neg" id="kExpense">—</div></div>
-      <div class="card kpi"><div class="lbl">Patrimônio</div><div class="val" id="kNet">—</div></div>
+      <div class="card kpi"><div class="lbl">Saldo do mês</div><div class="val" id="kSaldo">—</div></div>
+      <div class="card kpi"><div class="lbl">Receitas</div><div class="val pos" id="kReceitas">—</div></div>
+      <div class="card kpi"><div class="lbl">Despesas</div><div class="val neg" id="kDespesas">—</div></div>
+      <div class="card kpi"><div class="lbl">Patrimônio</div><div class="val" id="kPatrimonio">—</div></div>
     </div>
-
     <div class="grid2">
       <div class="card panel"><h3>Despesas por categoria</h3><canvas id="catChart" height="220"></canvas></div>
       <div class="card panel"><h3>Receita x Despesa</h3><canvas id="ieChart" height="220"></canvas></div>
     </div>
-
     <div class="grid2">
       <div class="card panel">
         <h3>Transações recentes</h3>
-        <table><thead><tr><th>Descrição</th><th>Categoria</th><th>Data</th><th style="text-align:right">Valor</th></tr></thead>
-        <tbody id="trxBody"><tr><td colspan="4" class="muted">Carregando…</td></tr></tbody></table>
+        <table><thead><tr><th>Descrição</th><th>Data</th><th style="text-align:right">Valor</th></tr></thead>
+        <tbody id="trxBody"><tr><td colspan="3" class="muted">Carregando…</td></tr></tbody></table>
       </div>
-      <div class="card panel">
-        <h3>Alertas</h3>
-        <div id="alertsBox"><div class="muted">Carregando…</div></div>
-      </div>
+      <div class="card panel"><h3>Alertas</h3><div id="alertsBox"><div class="muted">Carregando…</div></div></div>
     </div>
   </main>
 </div>
 
 <script>
-// Usa caminho relativo quando servido por http(s) (mesma origem);
-// se a página for aberta como arquivo (file://), aponta para o backend local.
 const API = location.protocol.startsWith('http') ? '/v1' : 'http://localhost:3000/v1';
-let token = null;
-let catChart, ieChart;
+let token = null, catChart, ieChart;
 const money = (v) => Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const $ = (id) => document.getElementById(id);
 
 async function api(path, opts={}){
-  const res = await fetch(API+path, {
-    ...opts,
-    headers:{ 'Content-Type':'application/json', ...(token?{Authorization:'Bearer '+token}:{}) , ...(opts.headers||{}) }
-  });
+  const res = await fetch(API+path, { ...opts,
+    headers:{ 'Content-Type':'application/json', ...(token?{Authorization:'Bearer '+token}:{}), ...(opts.headers||{}) }});
   if(res.status===403) return {__forbidden:true};
   if(!res.ok) throw new Error((await res.json().catch(()=>({}))).message || ('HTTP '+res.status));
   return res.status===204 ? null : res.json();
 }
 
-// ---- LOGIN ----
 $('loginBtn').onclick = async () => {
-  $('loginErr').textContent='';
-  $('loginBtn').disabled=true; $('loginBtn').textContent='Entrando…';
+  $('loginErr').textContent=''; $('loginBtn').disabled=true; $('loginBtn').textContent='Entrando…';
   try{
-    const data = await api('/auth/login',{method:'POST',body:JSON.stringify({email:$('email').value,password:$('password').value})});
-    token = data.accessToken;
-    $('who').textContent = data.user.name;
-    const plan = data.user.plan;
-    $('plan').textContent = plan==='free'?'FREE':'PREMIUM';
-    $('plan').className = 'badge'+(plan==='free'?' free':'');
+    const data = await api('/autenticacao/login',{method:'POST',body:JSON.stringify({email:$('email').value,senha:$('senha').value})});
+    token = data.tokenAcesso;
+    $('who').textContent = data.usuario.nome;
+    const plano = data.usuario.plano;
+    $('plano').textContent = plano==='gratuito'?'GRATUITO':'PREMIUM';
+    $('plano').className = 'badge'+(plano==='gratuito'?' free':'');
     $('login').classList.add('hidden'); $('app').classList.remove('hidden');
     loadAll();
   }catch(e){ $('loginErr').textContent = e.message; }
@@ -151,74 +130,67 @@ $('logoutBtn').onclick = () => { token=null; location.reload(); };
 $('refreshBtn').onclick = loadAll;
 $('runJobs').onclick = async () => {
   $('runJobs').disabled=true; $('runJobs').textContent='Rodando…';
-  try{ await Promise.all(['quotes','alerts','networth'].map(j=>api('/jobs/run/'+j,{method:'POST'}))); 
+  try{ await Promise.all(['cotacoes','alertas','patrimonio'].map(j=>api('/tarefas/executar/'+j,{method:'POST'})));
        await new Promise(r=>setTimeout(r,1200)); await loadAll(); }
   catch(e){ alert(e.message); }
-  finally{ $('runJobs').disabled=false; $('runJobs').textContent='▶ Rodar jobs (cotações/alertas/patrimônio)'; }
+  finally{ $('runJobs').disabled=false; $('runJobs').textContent='▶ Rodar tarefas (cotações/alertas/patrimônio)'; }
 };
 
-// ---- DATA ----
 async function loadAll(){
-  const now = new Date();
-  const month = now.getMonth()+1, year = now.getFullYear();
-  $('periodLbl').textContent = 'Período: '+String(month).padStart(2,'0')+'/'+year;
+  const agora = new Date();
+  const mes = agora.getMonth()+1, ano = agora.getFullYear();
+  $('periodoLbl').textContent = 'Período: '+String(mes).padStart(2,'0')+'/'+ano;
 
-  const [report, trx, alerts, net] = await Promise.all([
-    api('/reports/monthly?month='+month+'&year='+year),
-    api('/transactions?limit=8'),
-    api('/alerts'),
-    api('/networth'),
+  const [relatorio, trx, alertas, patr] = await Promise.all([
+    api('/relatorios/mensal?mes='+mes+'&ano='+ano),
+    api('/transacoes?limite=8'),
+    api('/alertas'),
+    api('/patrimonio'),
   ]);
 
-  $('kBalance').textContent = money(report.totals.balance);
-  $('kIncome').textContent  = money(report.totals.income);
-  $('kExpense').textContent = money(report.totals.expense);
-  $('kNet').textContent = net.__forbidden ? '— (Premium)' : money(net.netWorth);
+  $('kSaldo').textContent = money(relatorio.totais.saldo);
+  $('kReceitas').textContent = money(relatorio.totais.receitas);
+  $('kDespesas').textContent = money(relatorio.totais.despesas);
+  $('kPatrimonio').textContent = patr.__forbidden ? '— (Premium)' : money(patr.patrimonioLiquido);
 
-  renderCatChart(report.lines.filter(l=>l.type==='expense'));
-  renderIeChart(report.totals);
-  renderTrx(trx.items||[]);
-  renderAlerts(alerts||[]);
+  renderCatChart(relatorio.linhas.filter(l=>l.tipo==='despesa'));
+  renderIeChart(relatorio.totais);
+  renderTrx(trx.itens||[]);
+  renderAlerts(alertas||[]);
 }
 
-function renderTrx(items){
+function renderTrx(itens){
   const body = $('trxBody');
-  if(!items.length){ body.innerHTML='<tr><td colspan="4" class="muted">Sem transações.</td></tr>'; return; }
-  body.innerHTML = items.map(t=>{
-    const sign = t.type==='income'?'+':'-';
-    const cls = t.type==='income'?'pos':'neg';
-    const date = new Date(t.date).toLocaleDateString('pt-BR');
-    return '<tr><td>'+(t.description||'—')+'</td><td class="muted">'+(t.categoryId?'•':'')+'</td><td class="muted">'+date+'</td>'
-         +'<td style="text-align:right" class="'+cls+'">'+sign+' '+money(t.value)+'</td></tr>';
+  if(!itens.length){ body.innerHTML='<tr><td colspan="3" class="muted">Sem transações.</td></tr>'; return; }
+  body.innerHTML = itens.map(t=>{
+    const sinal = t.tipo==='receita'?'+':'-';
+    const cls = t.tipo==='receita'?'pos':'neg';
+    const data = new Date(t.data).toLocaleDateString('pt-BR');
+    return '<tr><td>'+(t.descricao||'—')+'</td><td class="muted">'+data+'</td>'
+         +'<td style="text-align:right" class="'+cls+'">'+sinal+' '+money(t.valor)+'</td></tr>';
   }).join('');
 }
-
-function renderAlerts(items){
+function renderAlerts(itens){
   const box = $('alertsBox');
-  if(!items.length){ box.innerHTML='<div class="muted">Nenhum alerta. 🎉</div>'; return; }
-  box.innerHTML = items.slice(0,6).map(a=>'<div class="alert"><div class="t">'+a.title+'</div><div class="m">'+a.message+'</div></div>').join('');
+  if(!itens.length){ box.innerHTML='<div class="muted">Nenhum alerta. 🎉</div>'; return; }
+  box.innerHTML = itens.slice(0,6).map(a=>'<div class="alert"><div class="t">'+a.titulo+'</div><div class="m">'+a.mensagem+'</div></div>').join('');
 }
-
-function renderCatChart(lines){
+function renderCatChart(linhas){
   const ctx = $('catChart');
-  const labels = lines.map(l=>l.categoryName), data = lines.map(l=>l.total);
-  const colors = ['#E5484D','#F5A623','#1F6FEB','#00B37E','#A855F7','#0EA5E9','#FB7185','#94A3B8'];
+  const labels = linhas.map(l=>l.categoriaNome), data = linhas.map(l=>l.total);
+  const cores = ['#E5484D','#F5A623','#1F6FEB','#00B37E','#A855F7','#0EA5E9','#FB7185','#94A3B8'];
   if(catChart) catChart.destroy();
-  if(!labels.length){ ctx.parentNode.querySelector('canvas').replaceWith(Object.assign(document.createElement('div'),{className:'muted',textContent:'Sem despesas no período.'})); return; }
-  catChart = new Chart(ctx,{type:'doughnut',data:{labels,datasets:[{data,backgroundColor:colors}]},
+  catChart = new Chart(ctx,{type:'doughnut',data:{labels,datasets:[{data,backgroundColor:cores}]},
     options:{plugins:{legend:{position:'right',labels:{boxWidth:12,font:{size:12}}}}}});
 }
-
-function renderIeChart(totals){
+function renderIeChart(totais){
   const ctx = $('ieChart');
   if(ieChart) ieChart.destroy();
   ieChart = new Chart(ctx,{type:'bar',data:{labels:['Receitas','Despesas','Saldo'],
-    datasets:[{data:[totals.income,totals.expense,totals.balance],backgroundColor:['#00B37E','#E5484D','#1F6FEB']}]},
+    datasets:[{data:[totais.receitas,totais.despesas,totais.saldo],backgroundColor:['#00B37E','#E5484D','#1F6FEB']}]},
     options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}});
 }
-
-// Enter no login
-$('password').addEventListener('keydown',e=>{ if(e.key==='Enter') $('loginBtn').click(); });
+$('senha').addEventListener('keydown',e=>{ if(e.key==='Enter') $('loginBtn').click(); });
 </script>
 </body>
 </html>

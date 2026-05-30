@@ -7,66 +7,62 @@ import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import { ReportsService } from '../application/reports.service';
 import { ReportExportService } from '../application/report-export.service';
 
-@ApiTags('reports')
+@ApiTags('relatorios')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
-@Controller('reports')
+@Controller('relatorios')
 export class ReportsController {
   constructor(
-    private readonly reports: ReportsService,
-    private readonly exporter: ReportExportService,
+    private readonly relatorios: ReportsService,
+    private readonly exportador: ReportExportService,
   ) {}
 
-  @Get('monthly')
-  monthly(@CurrentUser('id') userId: string, @Query('month') month: number, @Query('year') year: number) {
-    return this.reports.monthly(userId, Number(month), Number(year));
+  @Get('mensal')
+  mensal(@CurrentUser('id') usuarioId: string, @Query('mes') mes: number, @Query('ano') ano: number) {
+    return this.relatorios.mensal(usuarioId, Number(mes), Number(ano));
   }
 
-  @Get('yearly')
-  yearly(@CurrentUser('id') userId: string, @Query('year') year: number) {
-    return this.reports.yearly(userId, Number(year));
+  @Get('anual')
+  anual(@CurrentUser('id') usuarioId: string, @Query('ano') ano: number) {
+    return this.relatorios.anual(usuarioId, Number(ano));
   }
 
-  /** Exporta o relatório mensal. format=pdf|xlsx (download). Premium. */
-  @Get('monthly/export')
+  @Get('mensal/exportar')
   @UseGuards(PremiumGuard)
-  async exportMonthly(
-    @CurrentUser('id') userId: string,
-    @Query('month') month: number,
-    @Query('year') year: number,
-    @Query('format') format: 'pdf' | 'xlsx' = 'pdf',
+  async exportarMensal(
+    @CurrentUser('id') usuarioId: string,
+    @Query('mes') mes: number,
+    @Query('ano') ano: number,
+    @Query('formato') formato: 'pdf' | 'xlsx' = 'pdf',
     @Res() res: Response,
   ) {
-    const report = await this.reports.monthly(userId, Number(month), Number(year));
-    await this.send(res, report, format, `relatorio-${year}-${month}`);
+    const relatorio = await this.relatorios.mensal(usuarioId, Number(mes), Number(ano));
+    await this.enviar(res, relatorio, formato, `relatorio-${ano}-${mes}`);
   }
 
-  @Get('yearly/export')
+  @Get('anual/exportar')
   @UseGuards(PremiumGuard)
-  async exportYearly(
-    @CurrentUser('id') userId: string,
-    @Query('year') year: number,
-    @Query('format') format: 'pdf' | 'xlsx' = 'pdf',
+  async exportarAnual(
+    @CurrentUser('id') usuarioId: string,
+    @Query('ano') ano: number,
+    @Query('formato') formato: 'pdf' | 'xlsx' = 'pdf',
     @Res() res: Response,
   ) {
-    const report = await this.reports.yearly(userId, Number(year));
-    await this.send(res, report, format, `relatorio-${year}`);
+    const relatorio = await this.relatorios.anual(usuarioId, Number(ano));
+    await this.enviar(res, relatorio, formato, `relatorio-${ano}`);
   }
 
-  private async send(res: Response, report: any, format: 'pdf' | 'xlsx', name: string) {
-    if (format === 'xlsx') {
-      const buf = await this.exporter.toExcel(report);
+  private async enviar(res: Response, relatorio: any, formato: 'pdf' | 'xlsx', nome: string) {
+    if (formato === 'xlsx') {
+      const buf = await this.exportador.toExcel(relatorio);
       res.set({
         'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'Content-Disposition': `attachment; filename="${name}.xlsx"`,
+        'Content-Disposition': `attachment; filename="${nome}.xlsx"`,
       });
       return res.send(buf);
     }
-    const buf = await this.exporter.toPdf(report);
-    res.set({
-      'Content-Type': 'application/pdf',
-      'Content-Disposition': `attachment; filename="${name}.pdf"`,
-    });
+    const buf = await this.exportador.toPdf(relatorio);
+    res.set({ 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="${nome}.pdf"` });
     return res.send(buf);
   }
 }

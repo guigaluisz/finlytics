@@ -1,11 +1,11 @@
 export interface UserProps {
   id: string;
-  name: string;
-  lastName?: string | null;
+  nome: string;
+  sobrenome?: string | null;
   email: string;
-  passwordHash: string;
-  phone?: string | null;
-  plan: string;
+  senhaHash: string;
+  telefone?: string | null;
+  plano: string;
 }
 
 export class UserEntity {
@@ -13,11 +13,11 @@ export class UserEntity {
 
   get id() { return this.props.id; }
   get email() { return this.props.email; }
-  get name() { return this.props.name; }
-  get plan() { return this.props.plan; }
-  get passwordHash() { return this.props.passwordHash; }
+  get nome() { return this.props.nome; }
+  get plano() { return this.props.plano; }
+  get senhaHash() { return this.props.senhaHash; }
 
   toPublic() {
-    return { id: this.props.id, name: this.props.name, email: this.props.email, plan: this.props.plan };
+    return { id: this.props.id, nome: this.props.nome, email: this.props.email, plano: this.props.plano };
   }
 }

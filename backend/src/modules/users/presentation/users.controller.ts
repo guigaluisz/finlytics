@@ -6,47 +6,42 @@ import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import { PrismaService } from '../../../infra/database/prisma.service';
 
 class UpdateMeDto {
-  @IsOptional() @IsString() name?: string;
-  @IsOptional() @IsString() phone?: string;
-  @IsOptional() @IsString() locale?: string;
+  @IsOptional() @IsString() nome?: string;
+  @IsOptional() @IsString() telefone?: string;
+  @IsOptional() @IsString() idioma?: string;
 }
 
-@ApiTags('users')
+@ApiTags('usuario')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
-@Controller('me')
+@Controller('eu')
 export class UsersController {
   constructor(private readonly prisma: PrismaService) {}
 
   @Get()
-  async me(@CurrentUser('id') id: string) {
-    const u = await this.prisma.user.findUnique({ where: { id }, include: { subscription: true } });
+  async eu(@CurrentUser('id') id: string) {
+    const u = await this.prisma.user.findUnique({ where: { id }, include: { assinatura: true } });
     if (!u) return null;
-    return { id: u.id, name: u.name, email: u.email, phone: u.phone, plan: u.subscription?.plan ?? 'free' };
+    return { id: u.id, nome: u.nome, email: u.email, telefone: u.telefone, plano: u.assinatura?.plano ?? 'gratuito' };
   }
 
   @Patch()
-  update(@CurrentUser('id') id: string, @Body() dto: UpdateMeDto) {
-    return this.prisma.user.update({ where: { id }, data: dto, select: { id: true, name: true, phone: true } });
+  atualizar(@CurrentUser('id') id: string, @Body() dto: UpdateMeDto) {
+    return this.prisma.user.update({ where: { id }, data: dto, select: { id: true, nome: true, telefone: true } });
   }
 
-
-  @Get('audit-logs')
-  auditLogs(@CurrentUser('id') id: string) {
-    return this.prisma.auditLog.findMany({
-      where: { userId: id },
-      orderBy: { createdAt: 'desc' },
-      take: 100,
-    });
+  @Get('logs-auditoria')
+  logsAuditoria(@CurrentUser('id') id: string) {
+    return this.prisma.auditLog.findMany({ where: { usuarioId: id }, orderBy: { criadoEm: 'desc' }, take: 100 });
   }
 
   @Delete()
-  async remove(@CurrentUser('id') id: string) {
-    // LGPD: anonimiza e marca exclusão (carência antes de hard delete via job).
+  async excluir(@CurrentUser('id') id: string) {
+    // LGPD: anonimiza e marca exclusão
     await this.prisma.user.update({
       where: { id },
-      data: { deletedAt: new Date(), email: `deleted-${id}@finlytics.invalid`, name: 'Usuário removido', phone: null },
+      data: { excluidoEm: new Date(), email: `excluido-${id}@finlytics.invalid`, nome: 'Usuário removido', telefone: null },
     });
-    return { message: 'Conta marcada para exclusão.' };
+    return { mensagem: 'Conta marcada para exclusão.' };
   }
 }

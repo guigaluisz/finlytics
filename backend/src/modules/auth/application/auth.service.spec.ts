@@ -15,37 +15,38 @@ describe('AuthService', () => {
     markResetTokenUsed: jest.fn(),
     updatePassword: jest.fn(),
   } as any;
-  const passwords = { hash: jest.fn().mockResolvedValue('h'), verify: jest.fn() } as any;
-  const jwt = { signAsync: jest.fn().mockResolvedValue('access') } as any;
+  const senhas = { hash: jest.fn().mockResolvedValue('h'), verify: jest.fn() } as any;
+  const jwt = { signAsync: jest.fn().mockResolvedValue('acesso') } as any;
   const mail = { sendPasswordReset: jest.fn().mockResolvedValue({}) } as any;
   let service: AuthService;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new AuthService(repo, passwords, jwt, mail);
+    service = new AuthService(repo, senhas, jwt, mail);
   });
 
   it('register rejeita e-mail duplicado', async () => {
     repo.findByEmail.mockResolvedValue({ id: '1' });
     await expect(
-      service.register({ name: 'A', email: 'a@a.com', password: 'Aa1!aaaa' } as any),
+      service.register({ nome: 'A', email: 'a@a.com', senha: 'Aa1!aaaa' } as any),
     ).rejects.toBeInstanceOf(ConflictException);
   });
 
   it('register cria usuário e emite tokens', async () => {
     repo.findByEmail.mockResolvedValue(null);
-    repo.createUserWithDefaults.mockResolvedValue({ id: '1', name: 'A', email: 'a@a.com', plan: 'free' });
-    const res = await service.register({ name: 'A', email: 'a@a.com', password: 'Aa1!aaaa' } as any);
-    expect(res.accessToken).toBe('access');
-    expect(res.refreshToken).toHaveLength(96);
+    repo.createUserWithDefaults.mockResolvedValue({ id: '1', nome: 'A', email: 'a@a.com', assinatura: { plano: 'gratuito' } });
+    const res = await service.register({ nome: 'A', email: 'a@a.com', senha: 'Aa1!aaaa' } as any);
+    expect(res.tokenAcesso).toBe('acesso');
+    expect(res.tokenAtualizacao).toHaveLength(96);
+    expect(res.usuario.plano).toBe('gratuito');
     expect(repo.saveRefreshToken).toHaveBeenCalled();
   });
 
   it('login com senha errada falha', async () => {
-    repo.findByEmail.mockResolvedValue({ id: '1', passwordHash: 'h' });
-    passwords.verify.mockResolvedValue(false);
+    repo.findByEmail.mockResolvedValue({ id: '1', senhaHash: 'h' });
+    senhas.verify.mockResolvedValue(false);
     await expect(
-      service.login({ email: 'a@a.com', password: 'x' } as any),
+      service.login({ email: 'a@a.com', senha: 'x' } as any),
     ).rejects.toBeInstanceOf(UnauthorizedException);
   });
 });

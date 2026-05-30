@@ -5,41 +5,39 @@ import { PremiumGuard } from '../../../common/guards/premium.guard';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import { PrismaService } from '../../../infra/database/prisma.service';
 
-@ApiTags('networth')
+@ApiTags('patrimonio')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, PremiumGuard)
-@Controller('networth')
+@Controller('patrimonio')
 export class NetWorthController {
   constructor(private readonly prisma: PrismaService) {}
 
-  /** Patrimônio atual: contas + investimentos (a mercado) - dívidas de cartão. */
   @Get()
-  async current(@CurrentUser('id') userId: string) {
-    const accounts = await this.prisma.account.aggregate({ where: { userId }, _sum: { balance: true } });
-    const investments = await this.prisma.investment.findMany({ where: { userId } });
-    const invValue = investments.reduce(
-      (acc, i) => acc + Number(i.quantity) * Number(i.currentPrice ?? i.averagePrice), 0);
-    const cardUsage = await this.prisma.transaction.aggregate({
-      where: { userId, type: 'expense', creditCardId: { not: null }, deletedAt: null },
-      _sum: { value: true },
+  async atual(@CurrentUser('id') usuarioId: string) {
+    const contas = await this.prisma.account.aggregate({ where: { usuarioId }, _sum: { saldo: true } });
+    const investimentos = await this.prisma.investment.findMany({ where: { usuarioId } });
+    const valorInvestido = investimentos.reduce(
+      (acc, i) => acc + Number(i.quantidade) * Number(i.precoAtual ?? i.precoMedio), 0);
+    const usoCartao = await this.prisma.transaction.aggregate({
+      where: { usuarioId, tipo: 'despesa', cartaoId: { not: null }, excluidoEm: null },
+      _sum: { valor: true },
     });
-    const assets = Number(accounts._sum.balance ?? 0) + invValue;
-    const liabilities = Number(cardUsage._sum.value ?? 0);
+    const ativos = Number(contas._sum.saldo ?? 0) + valorInvestido;
+    const passivos = Number(usoCartao._sum.valor ?? 0);
     return {
-      assets,
-      liabilities,
-      netWorth: assets - liabilities,
-      breakdown: { cash: Number(accounts._sum.balance ?? 0), investments: invValue, cardDebt: liabilities },
+      ativos,
+      passivos,
+      patrimonioLiquido: ativos - passivos,
+      composicao: { dinheiro: Number(contas._sum.saldo ?? 0), investimentos: valorInvestido, dividaCartao: passivos },
     };
   }
 
-  /** Evolução: snapshots mensais gerados pelo job de patrimônio. */
-  @Get('evolution')
-  evolution(@CurrentUser('id') userId: string, @Query('months') months = 12) {
+  @Get('evolucao')
+  evolucao(@CurrentUser('id') usuarioId: string, @Query('meses') meses = 12) {
     return this.prisma.netWorthSnapshot.findMany({
-      where: { userId },
-      orderBy: { snapshotMonth: 'desc' },
-      take: Number(months),
+      where: { usuarioId },
+      orderBy: { mesReferencia: 'desc' },
+      take: Number(meses),
     });
   }
 }

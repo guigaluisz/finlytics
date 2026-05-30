@@ -1,85 +1,74 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../infra/database/prisma.service';
 import { AuthRepository, CreateUserData } from '../domain/auth.repository';
-import { DEFAULT_CATEGORIES } from '../../../../prisma/seed';
+import { DEFAULT_CATEGORIES } from '../../../../prisma/default-categories';
 
 @Injectable()
 export class PrismaAuthRepository implements AuthRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   findByEmail(email: string) {
-    return this.prisma.user.findUnique({ where: { email }, include: { subscription: true } });
+    return this.prisma.user.findUnique({ where: { email }, include: { assinatura: true } });
   }
 
   findById(id: string) {
-    return this.prisma.user.findUnique({ where: { id }, include: { subscription: true } });
+    return this.prisma.user.findUnique({ where: { id }, include: { assinatura: true } });
   }
 
-  // Cria usuário + assinatura free + categorias padrão em uma transação.
   createUserWithDefaults(data: CreateUserData) {
     return this.prisma.$transaction(async (tx) => {
-      const user = await tx.user.create({
+      return tx.user.create({
         data: {
-          name: data.name,
-          lastName: data.lastName,
+          nome: data.nome,
+          sobrenome: data.sobrenome,
           email: data.email,
-          phone: data.phone,
-          passwordHash: data.passwordHash,
-          subscription: { create: { plan: 'free', status: 'active' } },
-          categories: {
+          telefone: data.telefone,
+          senhaHash: data.senhaHash,
+          assinatura: { create: { plano: 'gratuito', status: 'ativa' } },
+          categorias: {
             create: DEFAULT_CATEGORIES.map((c) => ({
-              name: c.name,
-              type: c.type,
-              color: c.color,
-              icon: c.icon,
-              isDefault: true,
+              nome: c.nome, tipo: c.tipo, cor: c.cor, icone: c.icone, padrao: true,
             })),
           },
         },
+        include: { assinatura: true },
       });
-      return user;
     });
   }
 
-  async saveRefreshToken(userId: string, tokenHash: string, expiresAt: Date) {
-    await this.prisma.refreshToken.create({ data: { userId, tokenHash, expiresAt } });
+  async saveRefreshToken(usuarioId: string, tokenHash: string, expiraEm: Date) {
+    await this.prisma.refreshToken.create({ data: { usuarioId, tokenHash, expiraEm } });
   }
 
   findValidRefreshToken(tokenHash: string) {
     return this.prisma.refreshToken.findFirst({
-      where: { tokenHash, revokedAt: null, expiresAt: { gt: new Date() } },
+      where: { tokenHash, revogadoEm: null, expiraEm: { gt: new Date() } },
     });
   }
 
   async revokeRefreshToken(tokenHash: string) {
-    await this.prisma.refreshToken.updateMany({
-      where: { tokenHash },
-      data: { revokedAt: new Date() },
-    });
+    await this.prisma.refreshToken.updateMany({ where: { tokenHash }, data: { revogadoEm: new Date() } });
   }
 
-  async revokeAllRefreshTokens(userId: string) {
-    await this.prisma.refreshToken.updateMany({
-      where: { userId, revokedAt: null },
-      data: { revokedAt: new Date() },
-    });
+  async revokeAllRefreshTokens(usuarioId: string) {
+    await this.prisma.refreshToken.updateMany({ where: { usuarioId, revogadoEm: null }, data: { revogadoEm: new Date() } });
   }
 
-  async savePasswordResetToken(userId: string, tokenHash: string, expiresAt: Date) {
-    await this.prisma.passwordResetToken.create({ data: { userId, tokenHash, expiresAt } });
+  async savePasswordResetToken(usuarioId: string, tokenHash: string, expiraEm: Date) {
+    await this.prisma.passwordResetToken.create({ data: { usuarioId, tokenHash, expiraEm } });
   }
 
   findValidResetToken(tokenHash: string) {
     return this.prisma.passwordResetToken.findFirst({
-      where: { tokenHash, usedAt: null, expiresAt: { gt: new Date() } },
+      where: { tokenHash, usadoEm: null, expiraEm: { gt: new Date() } },
     });
   }
 
   async markResetTokenUsed(id: string) {
-    await this.prisma.passwordResetToken.update({ where: { id }, data: { usedAt: new Date() } });
+    await this.prisma.passwordResetToken.update({ where: { id }, data: { usadoEm: new Date() } });
   }
 
-  async updatePassword(userId: string, passwordHash: string) {
-    await this.prisma.user.update({ where: { id: userId }, data: { passwordHash } });
+  async updatePassword(usuarioId: string, senhaHash: string) {
+    await this.prisma.user.update({ where: { id: usuarioId }, data: { senhaHash } });
   }
 }

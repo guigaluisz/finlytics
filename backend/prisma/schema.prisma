@@ -1,4 +1,4 @@
-// Finlytics — Prisma schema (PostgreSQL)
+// Finlytics — schema Prisma (PostgreSQL) — nomes em português
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,14 +9,14 @@ datasource db {
 }
 
 enum TransactionType {
-  income
-  expense
+  receita
+  despesa
 }
 
 enum CategoryType {
-  income
-  expense
-  both
+  receita
+  despesa
+  ambos
 }
 
 enum AssetType {
@@ -25,311 +25,311 @@ enum AssetType {
   lca
   tesouro
   fii
-  stock
+  acao
   etf
-  intl
+  internacional
 }
 
 enum GoalStatus {
-  active
-  completed
-  canceled
+  ativa
+  concluida
+  cancelada
 }
 
 enum SubscriptionPlan {
-  free
-  premium_monthly
-  premium_annual
+  gratuito
+  premium_mensal
+  premium_anual
 }
 
 enum SubscriptionStatus {
-  active
-  trialing
-  past_due
-  canceled
-  expired
+  ativa
+  teste
+  atrasada
+  cancelada
+  expirada
 }
 
 enum AlertType {
-  budget
-  invoice
-  goal
-  system
+  orcamento
+  fatura
+  meta
+  sistema
 }
 
 model User {
-  id             String   @id @default(uuid()) @db.Uuid
-  name           String   @db.VarChar(50)
-  lastName       String?  @map("last_name") @db.VarChar(50)
-  email          String   @unique @db.VarChar(160)
-  passwordHash   String   @map("password_hash")
-  phone          String?  @db.VarChar(20)
-  avatarUrl      String?  @map("avatar_url")
-  locale         String   @default("pt-BR") @db.VarChar(10)
-  emailVerified  Boolean  @default(false) @map("email_verified")
-  mfaEnabled     Boolean  @default(false) @map("mfa_enabled")
-  mfaSecret      String?  @map("mfa_secret")
-  onboardingGoal String?  @map("onboarding_goal") @db.VarChar(30)
-  incomeRange    String?  @map("income_range") @db.VarChar(30)
-  riskProfile    String?  @map("risk_profile") @db.VarChar(20)
-  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz
-  deletedAt      DateTime? @map("deleted_at") @db.Timestamptz
+  id              String    @id @default(uuid()) @db.Uuid
+  nome            String    @db.VarChar(50)
+  sobrenome       String?   @db.VarChar(50)
+  email           String    @unique @db.VarChar(160)
+  senhaHash       String    @map("senha_hash")
+  telefone        String?   @db.VarChar(20)
+  fotoUrl         String?   @map("foto_url")
+  idioma          String    @default("pt-BR") @db.VarChar(10)
+  emailVerificado Boolean   @default(false) @map("email_verificado")
+  mfaAtivo        Boolean   @default(false) @map("mfa_ativo")
+  mfaSegredo      String?   @map("mfa_segredo")
+  objetivo        String?   @db.VarChar(30)
+  faixaRenda      String?   @map("faixa_renda") @db.VarChar(30)
+  perfilRisco     String?   @map("perfil_risco") @db.VarChar(20)
+  criadoEm        DateTime  @default(now()) @map("criado_em") @db.Timestamptz
+  atualizadoEm    DateTime  @updatedAt @map("atualizado_em") @db.Timestamptz
+  excluidoEm      DateTime? @map("excluido_em") @db.Timestamptz
 
-  accounts       Account[]
-  categories     Category[]
-  transactions   Transaction[]
-  creditCards    CreditCard[]
-  budgets        Budget[]
-  goals          FinancialGoal[]
-  investments    Investment[]
-  snapshots      NetWorthSnapshot[]
-  alerts         Alert[]
-  subscription   Subscription?
-  refreshTokens  RefreshToken[]
-  passwordResets PasswordResetToken[]
-  auditLogs      AuditLog[]
+  contas            Account[]
+  categorias        Category[]
+  transacoes        Transaction[]
+  cartoes           CreditCard[]
+  orcamentos        Budget[]
+  metas             FinancialGoal[]
+  investimentos     Investment[]
+  snapshots         NetWorthSnapshot[]
+  alertas           Alert[]
+  assinatura        Subscription?
+  tokensAtualizacao RefreshToken[]
+  redefinicoesSenha PasswordResetToken[]
+  logsAuditoria     AuditLog[]
 
-  @@map("users")
+  @@map("usuarios")
 }
 
 model Account {
   id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @map("user_id") @db.Uuid
-  name      String   @db.VarChar(60)
-  type      String   @db.VarChar(20) // checking | savings | wallet
-  balance   Decimal  @default(0) @db.Decimal(14, 2)
-  currency  String   @default("BRL") @db.VarChar(3)
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  usuarioId String   @map("usuario_id") @db.Uuid
+  nome      String   @db.VarChar(60)
+  tipo      String   @db.VarChar(20)
+  saldo     Decimal  @default(0) @db.Decimal(14, 2)
+  moeda     String   @default("BRL") @db.VarChar(3)
+  criadoEm  DateTime @default(now()) @map("criado_em") @db.Timestamptz
 
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  transactions Transaction[]
+  usuario    User          @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  transacoes Transaction[]
 
-  @@index([userId])
-  @@map("accounts")
+  @@index([usuarioId])
+  @@map("contas")
 }
 
 model Category {
   id        String       @id @default(uuid()) @db.Uuid
-  userId    String       @map("user_id") @db.Uuid
-  name      String       @db.VarChar(60)
-  type      CategoryType @default(expense)
-  color     String       @default("#6B7280") @db.VarChar(9)
-  icon      String       @default("tag") @db.VarChar(40)
-  isDefault Boolean      @default(false) @map("is_default")
-  createdAt DateTime     @default(now()) @map("created_at") @db.Timestamptz
-  deletedAt DateTime?    @map("deleted_at") @db.Timestamptz
+  usuarioId String       @map("usuario_id") @db.Uuid
+  nome      String       @db.VarChar(60)
+  tipo      CategoryType @default(despesa)
+  cor       String       @default("#6B7280") @db.VarChar(9)
+  icone     String       @default("tag") @db.VarChar(40)
+  padrao    Boolean      @default(false)
+  criadoEm  DateTime     @default(now()) @map("criado_em") @db.Timestamptz
+  excluidoEm DateTime?   @map("excluido_em") @db.Timestamptz
 
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  transactions Transaction[]
-  budgets      Budget[]
+  usuario    User          @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  transacoes Transaction[]
+  orcamentos Budget[]
 
-  @@unique([userId, name])
-  @@index([userId])
-  @@map("categories")
+  @@unique([usuarioId, nome])
+  @@index([usuarioId])
+  @@map("categorias")
 }
 
 model Transaction {
-  id           String          @id @default(uuid()) @db.Uuid
-  userId       String          @map("user_id") @db.Uuid
-  categoryId   String?         @map("category_id") @db.Uuid
-  accountId    String?         @map("account_id") @db.Uuid
-  creditCardId String?         @map("credit_card_id") @db.Uuid
-  type         TransactionType
-  value        Decimal         @db.Decimal(14, 2)
-  description  String?         @db.VarChar(255)
-  date         DateTime        @db.Date
-  recurrence   String?         @db.VarChar(20) // none|monthly|weekly|yearly
-  createdAt    DateTime        @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt    DateTime        @updatedAt @map("updated_at") @db.Timestamptz
-  deletedAt    DateTime?       @map("deleted_at") @db.Timestamptz
+  id          String          @id @default(uuid()) @db.Uuid
+  usuarioId   String          @map("usuario_id") @db.Uuid
+  categoriaId String?         @map("categoria_id") @db.Uuid
+  contaId     String?         @map("conta_id") @db.Uuid
+  cartaoId    String?         @map("cartao_id") @db.Uuid
+  tipo        TransactionType
+  valor       Decimal         @db.Decimal(14, 2)
+  descricao   String?         @db.VarChar(255)
+  data        DateTime        @db.Date
+  recorrencia String?         @db.VarChar(20)
+  criadoEm    DateTime        @default(now()) @map("criado_em") @db.Timestamptz
+  atualizadoEm DateTime       @updatedAt @map("atualizado_em") @db.Timestamptz
+  excluidoEm  DateTime?       @map("excluido_em") @db.Timestamptz
 
-  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  category   Category?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  account    Account?    @relation(fields: [accountId], references: [id], onDelete: SetNull)
-  creditCard CreditCard? @relation(fields: [creditCardId], references: [id], onDelete: SetNull)
+  usuario   User        @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  categoria Category?   @relation(fields: [categoriaId], references: [id], onDelete: SetNull)
+  conta     Account?    @relation(fields: [contaId], references: [id], onDelete: SetNull)
+  cartao    CreditCard? @relation(fields: [cartaoId], references: [id], onDelete: SetNull)
 
-  @@index([userId, date])
-  @@index([userId, categoryId, date])
-  @@index([userId, type, date])
-  @@map("transactions")
+  @@index([usuarioId, data])
+  @@index([usuarioId, categoriaId, data])
+  @@index([usuarioId, tipo, data])
+  @@map("transacoes")
 }
 
 model CreditCard {
-  id          String   @id @default(uuid()) @db.Uuid
-  userId      String   @map("user_id") @db.Uuid
-  bank        String   @db.VarChar(60)
-  brand       String   @db.VarChar(30)
-  creditLimit Decimal  @map("credit_limit") @db.Decimal(14, 2)
-  closingDay  Int      @map("closing_day") @db.SmallInt
-  dueDay      Int      @map("due_day") @db.SmallInt
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
-  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz
+  id            String    @id @default(uuid()) @db.Uuid
+  usuarioId     String    @map("usuario_id") @db.Uuid
+  banco         String    @db.VarChar(60)
+  bandeira      String    @db.VarChar(30)
+  limite        Decimal   @db.Decimal(14, 2)
+  diaFechamento Int       @map("dia_fechamento") @db.SmallInt
+  diaVencimento Int       @map("dia_vencimento") @db.SmallInt
+  criadoEm      DateTime  @default(now()) @map("criado_em") @db.Timestamptz
+  excluidoEm    DateTime? @map("excluido_em") @db.Timestamptz
 
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  transactions Transaction[]
+  usuario    User          @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  transacoes Transaction[]
 
-  @@index([userId])
-  @@map("credit_cards")
+  @@index([usuarioId])
+  @@map("cartoes")
 }
 
 model Budget {
   id           String   @id @default(uuid()) @db.Uuid
-  userId       String   @map("user_id") @db.Uuid
-  categoryId   String   @map("category_id") @db.Uuid
-  monthlyLimit Decimal  @map("monthly_limit") @db.Decimal(14, 2)
-  month        Int      @db.SmallInt
-  year         Int      @db.SmallInt
-  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+  usuarioId    String   @map("usuario_id") @db.Uuid
+  categoriaId  String   @map("categoria_id") @db.Uuid
+  limiteMensal Decimal  @map("limite_mensal") @db.Decimal(14, 2)
+  mes          Int      @db.SmallInt
+  ano          Int      @db.SmallInt
+  criadoEm     DateTime @default(now()) @map("criado_em") @db.Timestamptz
 
-  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  usuario   User     @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  categoria Category @relation(fields: [categoriaId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, categoryId, month, year])
-  @@index([userId])
-  @@map("budgets")
+  @@unique([usuarioId, categoriaId, mes, ano])
+  @@index([usuarioId])
+  @@map("orcamentos")
 }
 
 model FinancialGoal {
-  id            String     @id @default(uuid()) @db.Uuid
-  userId        String     @map("user_id") @db.Uuid
-  title         String     @db.VarChar(80)
-  targetAmount  Decimal    @map("target_amount") @db.Decimal(14, 2)
-  currentAmount Decimal    @default(0) @map("current_amount") @db.Decimal(14, 2)
-  targetDate    DateTime   @map("target_date") @db.Date
-  status        GoalStatus @default(active)
-  createdAt     DateTime   @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt     DateTime   @updatedAt @map("updated_at") @db.Timestamptz
+  id           String     @id @default(uuid()) @db.Uuid
+  usuarioId    String     @map("usuario_id") @db.Uuid
+  titulo       String     @db.VarChar(80)
+  valorAlvo    Decimal    @map("valor_alvo") @db.Decimal(14, 2)
+  valorAtual   Decimal    @default(0) @map("valor_atual") @db.Decimal(14, 2)
+  dataAlvo     DateTime   @map("data_alvo") @db.Date
+  status       GoalStatus @default(ativa)
+  criadoEm     DateTime   @default(now()) @map("criado_em") @db.Timestamptz
+  atualizadoEm DateTime   @updatedAt @map("atualizado_em") @db.Timestamptz
 
-  user          User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  contributions GoalContribution[]
+  usuario User               @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  aportes GoalContribution[]
 
-  @@index([userId])
-  @@map("financial_goals")
+  @@index([usuarioId])
+  @@map("metas")
 }
 
 model GoalContribution {
-  id        String   @id @default(uuid()) @db.Uuid
-  goalId    String   @map("goal_id") @db.Uuid
-  amount    Decimal  @db.Decimal(14, 2)
-  date      DateTime @db.Date
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  id       String   @id @default(uuid()) @db.Uuid
+  metaId   String   @map("meta_id") @db.Uuid
+  valor    Decimal  @db.Decimal(14, 2)
+  data     DateTime @db.Date
+  criadoEm DateTime @default(now()) @map("criado_em") @db.Timestamptz
 
-  goal FinancialGoal @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  meta FinancialGoal @relation(fields: [metaId], references: [id], onDelete: Cascade)
 
-  @@index([goalId])
-  @@map("goal_contributions")
+  @@index([metaId])
+  @@map("aportes")
 }
 
 model Investment {
   id           String    @id @default(uuid()) @db.Uuid
-  userId       String    @map("user_id") @db.Uuid
-  assetType    AssetType @map("asset_type")
+  usuarioId    String    @map("usuario_id") @db.Uuid
+  tipoAtivo    AssetType @map("tipo_ativo")
   ticker       String    @db.VarChar(20)
-  quantity     Decimal   @db.Decimal(18, 6)
-  averagePrice Decimal   @map("average_price") @db.Decimal(18, 6)
-  currentPrice Decimal?  @map("current_price") @db.Decimal(18, 6)
-  currency     String    @default("BRL") @db.VarChar(3)
-  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  quantidade   Decimal   @db.Decimal(18, 6)
+  precoMedio   Decimal   @map("preco_medio") @db.Decimal(18, 6)
+  precoAtual   Decimal?  @map("preco_atual") @db.Decimal(18, 6)
+  moeda        String    @default("BRL") @db.VarChar(3)
+  criadoEm     DateTime  @default(now()) @map("criado_em") @db.Timestamptz
+  atualizadoEm DateTime  @updatedAt @map("atualizado_em") @db.Timestamptz
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  usuario User @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 
-  @@index([userId])
-  @@index([userId, assetType])
-  @@map("investments")
+  @@index([usuarioId])
+  @@index([usuarioId, tipoAtivo])
+  @@map("investimentos")
 }
 
 model NetWorthSnapshot {
-  id            String   @id @default(uuid()) @db.Uuid
-  userId        String   @map("user_id") @db.Uuid
-  snapshotMonth DateTime @map("snapshot_month") @db.Date
-  assets        Decimal  @db.Decimal(16, 2)
-  liabilities   Decimal  @db.Decimal(16, 2)
-  netWorth      Decimal  @map("net_worth") @db.Decimal(16, 2)
-  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
+  id                String   @id @default(uuid()) @db.Uuid
+  usuarioId         String   @map("usuario_id") @db.Uuid
+  mesReferencia     DateTime @map("mes_referencia") @db.Date
+  ativos            Decimal  @db.Decimal(16, 2)
+  passivos          Decimal  @db.Decimal(16, 2)
+  patrimonioLiquido Decimal  @map("patrimonio_liquido") @db.Decimal(16, 2)
+  criadoEm          DateTime @default(now()) @map("criado_em") @db.Timestamptz
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  usuario User @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, snapshotMonth])
-  @@index([userId])
-  @@map("net_worth_snapshots")
+  @@unique([usuarioId, mesReferencia])
+  @@index([usuarioId])
+  @@map("snapshots_patrimonio")
 }
 
 model Alert {
   id        String    @id @default(uuid()) @db.Uuid
-  userId    String    @map("user_id") @db.Uuid
-  type      AlertType
-  title     String    @db.VarChar(120)
-  message   String    @db.VarChar(300)
-  read      Boolean   @default(false)
-  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  usuarioId String    @map("usuario_id") @db.Uuid
+  tipo      AlertType
+  titulo    String    @db.VarChar(120)
+  mensagem  String    @db.VarChar(300)
+  lida      Boolean   @default(false)
+  criadoEm  DateTime  @default(now()) @map("criado_em") @db.Timestamptz
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  usuario User @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 
-  @@index([userId, read])
-  @@map("alerts")
+  @@index([usuarioId, lida])
+  @@map("alertas")
 }
 
 model Subscription {
-  id             String             @id @default(uuid()) @db.Uuid
-  userId         String             @unique @map("user_id") @db.Uuid
-  plan           SubscriptionPlan   @default(free)
-  status         SubscriptionStatus @default(active)
-  provider       String?            @db.VarChar(20) // apple | google | stripe
-  externalId     String?            @map("external_id")
-  expirationDate DateTime?          @map("expiration_date") @db.Timestamptz
-  createdAt      DateTime           @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt      DateTime           @updatedAt @map("updated_at") @db.Timestamptz
+  id            String             @id @default(uuid()) @db.Uuid
+  usuarioId     String             @unique @map("usuario_id") @db.Uuid
+  plano         SubscriptionPlan   @default(gratuito)
+  status        SubscriptionStatus @default(ativa)
+  provedor      String?            @db.VarChar(20)
+  idExterno     String?            @map("id_externo")
+  dataExpiracao DateTime?          @map("data_expiracao") @db.Timestamptz
+  criadoEm      DateTime           @default(now()) @map("criado_em") @db.Timestamptz
+  atualizadoEm  DateTime           @updatedAt @map("atualizado_em") @db.Timestamptz
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  usuario User @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 
-  @@map("subscriptions")
+  @@map("assinaturas")
 }
 
 model RefreshToken {
-  id        String    @id @default(uuid()) @db.Uuid
-  userId    String    @map("user_id") @db.Uuid
-  tokenHash String    @map("token_hash")
-  device    String?   @db.VarChar(120)
-  expiresAt DateTime  @map("expires_at") @db.Timestamptz
-  revokedAt DateTime? @map("revoked_at") @db.Timestamptz
-  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  id          String    @id @default(uuid()) @db.Uuid
+  usuarioId   String    @map("usuario_id") @db.Uuid
+  tokenHash   String    @map("token_hash")
+  dispositivo String?   @db.VarChar(120)
+  expiraEm    DateTime  @map("expira_em") @db.Timestamptz
+  revogadoEm  DateTime? @map("revogado_em") @db.Timestamptz
+  criadoEm    DateTime  @default(now()) @map("criado_em") @db.Timestamptz
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  usuario User @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 
-  @@index([userId])
+  @@index([usuarioId])
   @@index([tokenHash])
-  @@map("refresh_tokens")
+  @@map("tokens_atualizacao")
 }
 
 model PasswordResetToken {
   id        String    @id @default(uuid()) @db.Uuid
-  userId    String    @map("user_id") @db.Uuid
+  usuarioId String    @map("usuario_id") @db.Uuid
   tokenHash String    @map("token_hash")
-  expiresAt DateTime  @map("expires_at") @db.Timestamptz
-  usedAt    DateTime? @map("used_at") @db.Timestamptz
-  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  expiraEm  DateTime  @map("expira_em") @db.Timestamptz
+  usadoEm   DateTime? @map("usado_em") @db.Timestamptz
+  criadoEm  DateTime  @default(now()) @map("criado_em") @db.Timestamptz
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  usuario User @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 
   @@index([tokenHash])
-  @@map("password_reset_tokens")
+  @@map("tokens_redefinicao_senha")
 }
 
 model AuditLog {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String?  @map("user_id") @db.Uuid
-  action    String   @db.VarChar(60)
-  entity    String?  @db.VarChar(60)
-  entityId  String?  @map("entity_id") @db.VarChar(60)
-  metadata  Json?
-  ip        String?  @db.VarChar(45)
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  id         String   @id @default(uuid()) @db.Uuid
+  usuarioId  String?  @map("usuario_id") @db.Uuid
+  acao       String   @db.VarChar(60)
+  entidade   String?  @db.VarChar(60)
+  entidadeId String?  @map("entidade_id") @db.VarChar(60)
+  metadados  Json?
+  ip         String?  @db.VarChar(45)
+  criadoEm   DateTime @default(now()) @map("criado_em") @db.Timestamptz
 
-  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  usuario User? @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
 
-  @@index([userId])
-  @@index([action])
-  @@map("audit_logs")
+  @@index([usuarioId])
+  @@index([acao])
+  @@map("logs_auditoria")
 }
