@@ -1,0 +1,51 @@
+import { TransactionsService } from './transactions.service';
+import { NotFoundError, BusinessRuleError } from '../../../common/errors/domain.error';
+
+describe('TransactionsService', () => {
+  const repo = {
+    create: jest.fn(),
+    findById: jest.fn(),
+    list: jest.fn(),
+    update: jest.fn(),
+    softDelete: jest.fn(),
+    summary: jest.fn(),
+  } as any;
+  let service: TransactionsService;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    service = new TransactionsService(repo);
+  });
+
+  it('cria despesa válida normalizando o valor', async () => {
+    repo.create.mockResolvedValue({ id: 't1' });
+    const dto: any = { type: 'expense', value: 32.5, date: '2026-05-29', description: 'Almoço' };
+    const res = await service.create('u1', dto);
+    expect(res).toEqual({ id: 't1' });
+    expect(repo.create).toHaveBeenCalledWith('u1', expect.objectContaining({ type: 'expense', value: 32.5 }));
+  });
+
+  it('rejeita valor menor ou igual a zero', async () => {
+    const dto: any = { type: 'expense', value: 0, date: '2026-05-29' };
+    await expect(service.create('u1', dto)).rejects.toBeInstanceOf(BusinessRuleError);
+  });
+
+  it('findOne lança NotFound quando não existe', async () => {
+    repo.findById.mockResolvedValue(null);
+    await expect(service.findOne('u1', 'x')).rejects.toBeInstanceOf(NotFoundError);
+  });
+
+  it('update recalcula valor e exige posse', async () => {
+    repo.findById.mockResolvedValue({ id: 't1', userId: 'u1' });
+    repo.update.mockResolvedValue({ id: 't1', value: 50 });
+    const res = await service.update('u1', 't1', { value: 50 } as any);
+    expect(res.value).toBe(50);
+    expect(repo.update).toHaveBeenCalled();
+  });
+
+  it('remove faz soft delete após validar existência', async () => {
+    repo.findById.mockResolvedValue({ id: 't1' });
+    await service.remove('u1', 't1');
+    expect(repo.softDelete).toHaveBeenCalledWith('u1', 't1');
+  });
+});

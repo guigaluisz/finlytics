@@ -1,0 +1,28 @@
+# Node
+node_modules/
+dist/
+coverage/
+*.log
+.npm/
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Prisma
+backend/prisma/*.db
+
+# Flutter
+mobile/.dart_tool/
+mobile/build/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/.packages
+*.iml
+
+# OS / IDE
+.DS_Store
+.idea/
+.vscode/
+*.swp
