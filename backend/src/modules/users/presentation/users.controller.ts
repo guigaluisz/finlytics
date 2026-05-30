@@ -11,6 +11,12 @@ class UpdateMeDto {
   @IsOptional() @IsString() idioma?: string;
 }
 
+class OnboardingDto {
+  @IsOptional() @IsString() objetivo?: string;
+  @IsOptional() @IsString() faixaRenda?: string;
+  @IsOptional() @IsString() perfilRisco?: string;
+}
+
 @ApiTags('usuario')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
@@ -22,12 +28,26 @@ export class UsersController {
   async eu(@CurrentUser('id') id: string) {
     const u = await this.prisma.user.findUnique({ where: { id }, include: { assinatura: true } });
     if (!u) return null;
-    return { id: u.id, nome: u.nome, email: u.email, telefone: u.telefone, plano: u.assinatura?.plano ?? 'gratuito' };
+    return {
+      id: u.id, nome: u.nome, email: u.email, telefone: u.telefone,
+      objetivo: u.objetivo, faixaRenda: u.faixaRenda, perfilRisco: u.perfilRisco,
+      plano: u.assinatura?.plano ?? 'gratuito',
+    };
   }
 
   @Patch()
   atualizar(@CurrentUser('id') id: string, @Body() dto: UpdateMeDto) {
     return this.prisma.user.update({ where: { id }, data: dto, select: { id: true, nome: true, telefone: true } });
+  }
+
+  // Persiste as respostas do onboarding (objetivo, faixa de renda, perfil de risco).
+  @Patch('onboarding')
+  async onboarding(@CurrentUser('id') id: string, @Body() dto: OnboardingDto) {
+    await this.prisma.user.update({
+      where: { id },
+      data: { objetivo: dto.objetivo, faixaRenda: dto.faixaRenda, perfilRisco: dto.perfilRisco },
+    });
+    return { mensagem: 'Perfil salvo com sucesso.' };
   }
 
   @Get('logs-auditoria')
@@ -37,7 +57,6 @@ export class UsersController {
 
   @Delete()
   async excluir(@CurrentUser('id') id: string) {
-    // LGPD: anonimiza e marca exclusão
     await this.prisma.user.update({
       where: { id },
       data: { excluidoEm: new Date(), email: `excluido-${id}@finlytics.invalid`, nome: 'Usuário removido', telefone: null },
