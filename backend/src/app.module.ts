@@ -21,6 +21,7 @@ import { NetWorthModule } from './modules/networth/networth.module';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { AuditInterceptor } from './common/interceptors/audit.interceptor';
 import { HealthController } from './common/health.controller';
+import { AdminController } from './common/admin.controller';
 
 @Module({
   imports: [
@@ -44,7 +45,7 @@ import { HealthController } from './common/health.controller';
     AlertsModule,
     NetWorthModule,
   ],
-  controllers: [HealthController],
+  controllers: [HealthController, AdminController],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_INTERCEPTOR, useClass: LoggingInterceptor },

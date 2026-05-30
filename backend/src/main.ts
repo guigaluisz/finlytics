@@ -8,7 +8,20 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
 
-  app.use(helmet());
+  // CSP ajustada para permitir o painel web (/v1/admin): Chart.js via CDN e scripts/estilos inline.
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'", 'https://cdnjs.cloudflare.com', "'unsafe-inline'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          imgSrc: ["'self'", 'data:'],
+          connectSrc: ["'self'"],
+        },
+      },
+    }),
+  );
   app.enableCors({ origin: true, credentials: true });
   app.setGlobalPrefix('v1');
 
