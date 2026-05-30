@@ -30,6 +30,16 @@ export class UsersController {
     return this.prisma.user.update({ where: { id }, data: dto, select: { id: true, name: true, phone: true } });
   }
 
+
+  @Get('audit-logs')
+  auditLogs(@CurrentUser('id') id: string) {
+    return this.prisma.auditLog.findMany({
+      where: { userId: id },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    });
+  }
+
   @Delete()
   async remove(@CurrentUser('id') id: string) {
     // LGPD: anonimiza e marca exclusão (carência antes de hard delete via job).

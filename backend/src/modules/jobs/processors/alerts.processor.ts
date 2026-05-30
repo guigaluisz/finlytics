@@ -59,7 +59,6 @@ export class AlertsProcessor extends WorkerHost {
     const goals = await this.prisma.financialGoal.findMany({ where: { status: 'active' } });
     for (const g of goals) {
       const remaining = Number(g.targetAmount) - Number(g.currentAmount);
-      const months = Math.max(1, Math.ceil((new Date(g.targetDate).getTime() - Date.now()) / (30 * 864e5)));
       if (remaining > 0 && new Date(g.targetDate) < new Date()) {
         await this.createOnce(g.userId, 'goal', 'Meta em risco',
           `A meta "${g.title}" passou da data-alvo e ainda faltam R$ ${remaining.toFixed(2)}.`);

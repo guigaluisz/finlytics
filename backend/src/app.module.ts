@@ -19,6 +19,7 @@ import { JobsModule } from './modules/jobs/jobs.module';
 import { AlertsModule } from './modules/alerts/alerts.module';
 import { NetWorthModule } from './modules/networth/networth.module';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
+import { AuditInterceptor } from './common/interceptors/audit.interceptor';
 import { HealthController } from './common/health.controller';
 
 @Module({
@@ -47,6 +48,7 @@ import { HealthController } from './common/health.controller';
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_INTERCEPTOR, useClass: LoggingInterceptor },
+    { provide: APP_INTERCEPTOR, useClass: AuditInterceptor },
   ],
 })
 export class AppModule {}
