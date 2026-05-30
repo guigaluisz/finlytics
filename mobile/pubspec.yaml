@@ -17,7 +17,7 @@ dependencies:
   equatable: ^2.0.5
   intl: ^0.19.0                # moeda/data pt-BR
   fl_chart: ^0.66.2            # gráficos
-  local_auth: ^2.2.0           # biometria
+  local_auth: ^3.0.1           # biometria
   get_it: ^7.6.7               # DI
 
 dev_dependencies:
