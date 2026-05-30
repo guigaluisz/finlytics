@@ -71,6 +71,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
                       : const Text('Entrar'),
                 ),
+                TextButton(onPressed: () => context.go('/forgot-password'), child: const Text('Esqueci minha senha')),
                 TextButton(onPressed: () => context.go('/register'), child: const Text('Criar conta')),
               ],
             ),
