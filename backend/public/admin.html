@@ -60,6 +60,11 @@
   .prog{height:8px;background:var(--border);border-radius:999px;overflow:hidden;margin:8px 0}
   .prog > i{display:block;height:100%;background:var(--secondary)}
   .goalcard,.cardcard{padding:16px;margin-bottom:12px}
+  #catList{margin-top:14px}
+  .catrow{display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:6px 0;border-bottom:1px solid var(--border)}
+  .catrow:last-child{border-bottom:none}
+  .catrow i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:8px;vertical-align:middle}
+  .catrow b{color:var(--text)}
   .overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px}
   .modal{width:100%;max-width:420px;padding:24px}
   .modal h3{margin-bottom:16px}
@@ -118,7 +123,7 @@
         <div class="card kpi"><div class="lbl">Patrimônio</div><div class="val" id="kPatrimonio">—</div></div>
       </div>
       <div class="grid2">
-        <div class="card panel"><h3>Despesas por categoria</h3><canvas id="catChart" height="220"></canvas></div>
+        <div class="card panel"><h3>Despesas por categoria</h3><canvas id="catChart" height="200"></canvas><div id="catList"></div></div>
         <div class="card panel"><h3>Receita x Despesa</h3><canvas id="ieChart" height="220"></canvas></div>
       </div>
       <div class="card panel"><h3>Alertas</h3><div id="alertsBox"><div class="muted">—</div></div></div>
@@ -207,7 +212,6 @@ $('tabs').addEventListener('click',(e)=>{
   if(tab==='investimentos') loadInvestimentos();
 });
 
-// ---------- FILTRO DE PERÍODO ----------
 const MESES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 function initPeriodo(){
   const agora=new Date(), anoAtual=agora.getFullYear();
@@ -230,10 +234,9 @@ function mudarMes(delta){
 }
 function periodoSel(){ return { mes:Number($('selMes').value), ano:Number($('selAno').value) }; }
 
-// ---------- DASHBOARD ----------
 async function loadDashboard(){
-  const { mes, ano } = periodoSel();
-  const [rel,alertas,patr] = await Promise.all([api('/relatorios/mensal?mes='+mes+'&ano='+ano),api('/alertas'),api('/patrimonio')]);
+  const p = periodoSel();
+  const [rel,alertas,patr] = await Promise.all([api('/relatorios/mensal?mes='+p.mes+'&ano='+p.ano),api('/alertas'),api('/patrimonio')]);
   $('kSaldo').textContent=money(rel.totais.saldo); $('kReceitas').textContent=money(rel.totais.receitas);
   $('kDespesas').textContent=money(rel.totais.despesas);
   $('kPatrimonio').textContent=patr.__forbidden?'— (Premium)':money(patr.patrimonioLiquido);
@@ -243,24 +246,34 @@ async function loadDashboard(){
 function getCol(){ return getComputedStyle(document.documentElement).getPropertyValue('--text'); }
 function renderCat(linhas){
   const cores=['#E5484D','#F5A623','#1F6FEB','#00B37E','#A855F7','#0EA5E9','#FB7185','#94A3B8'];
+  const total = linhas.reduce((a,l)=>a+l.total,0);
   if(catChart) catChart.destroy();
-  catChart=new Chart($('catChart'),{type:'doughnut',data:{labels:linhas.map(l=>l.categoriaNome),datasets:[{data:linhas.map(l=>l.total),backgroundColor:cores}]},options:{plugins:{legend:{position:'right',labels:{color:getCol()}}}}});
+  catChart=new Chart($('catChart'),{type:'doughnut',
+    data:{labels:linhas.map(l=>l.categoriaNome),datasets:[{data:linhas.map(l=>l.total),backgroundColor:cores}]},
+    options:{plugins:{legend:{display:false},tooltip:{callbacks:{label:(ctx)=>{
+      const v=ctx.parsed||0, pct=total?(v/total*100):0;
+      return ' '+ctx.label+': '+money(v)+' ('+pct.toFixed(1)+'%)';
+    }}}}}});
+  $('catList').innerHTML = linhas.length ? linhas.map((l,i)=>{
+    const pct = total ? (l.total/total*100) : 0;
+    return '<div class="catrow"><span><i style="background:'+cores[i%cores.length]+'"></i>'+l.categoriaNome+'</span>'
+      +'<span><span class="muted">'+money(l.total)+'</span> · <b>'+pct.toFixed(1)+'%</b></span></div>';
+  }).join('') : '<div class="muted">Sem despesas no período.</div>';
 }
 function renderIE(t){
   if(ieChart) ieChart.destroy();
   ieChart=new Chart($('ieChart'),{type:'bar',data:{labels:['Receitas','Despesas','Saldo'],datasets:[{data:[t.receitas,t.despesas,t.saldo],backgroundColor:['#00B37E','#E5484D','#1F6FEB']}]},options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{color:getCol()}},x:{ticks:{color:getCol()}}}}});
 }
 async function exportar(formato){
-  const { mes, ano } = periodoSel();
+  const p = periodoSel();
   try{
-    const res=await fetch(API+'/relatorios/mensal/exportar?mes='+mes+'&ano='+ano+'&formato='+formato,{headers:{Authorization:'Bearer '+token}});
+    const res=await fetch(API+'/relatorios/mensal/exportar?mes='+p.mes+'&ano='+p.ano+'&formato='+formato,{headers:{Authorization:'Bearer '+token}});
     if(!res.ok){ alert('Não foi possível exportar (recurso Premium).'); return; }
     const blob=await res.blob(); const url=URL.createObjectURL(blob);
-    const a=document.createElement('a'); a.href=url; a.download='relatorio-'+ano+'-'+mes+'.'+formato; a.click(); URL.revokeObjectURL(url);
+    const a=document.createElement('a'); a.href=url; a.download='relatorio-'+p.ano+'-'+p.mes+'.'+formato; a.click(); URL.revokeObjectURL(url);
   }catch(e){ alert(e.message); }
 }
 
-// ---------- TRANSAÇÕES ----------
 async function loadTransacoes(){
   const r=await api('/transacoes?limite=50'); const itens=r.itens||[];
   const nome=(id)=>categorias.find(c=>c.id===id)?.nome||'—';
@@ -292,7 +305,6 @@ function editarTransacao(t){
 }
 async function excluirTransacao(id){ if(!confirm('Excluir esta transação?'))return; await api('/transacoes/'+id,{method:'DELETE'}); loadTransacoes(); }
 
-// ---------- METAS ----------
 async function loadMetas(){
   const metas=await api('/metas');
   $('metasBox').innerHTML = metas.length? metas.map(m=>{
@@ -312,7 +324,6 @@ function formMeta(){
 function aportar(id){ openModal('Registrar aporte',[{name:'valor',label:'Valor (R$)',type:'number'}], async (v)=>{ await api('/metas/'+id+'/aportes',{method:'POST',body:JSON.stringify({valor:Number(v.valor)})}); loadMetas(); }); }
 async function excluirMeta(id){ if(!confirm('Excluir meta?'))return; await api('/metas/'+id,{method:'DELETE'}); loadMetas(); }
 
-// ---------- CARTÕES ----------
 async function loadCartoes(){
   const cartoes=await api('/cartoes');
   if(!cartoes.length){ $('cartoesBox').innerHTML='<div class="muted">Nenhum cartão.</div>'; return; }
@@ -336,7 +347,6 @@ function formCartao(){
 }
 async function excluirCartao(id){ if(!confirm('Excluir cartão?'))return; await api('/cartoes/'+id,{method:'DELETE'}); loadCartoes(); }
 
-// ---------- INVESTIMENTOS ----------
 async function loadInvestimentos(){
   const r=await api('/investimentos');
   if(r.__forbidden){ $('investBox').innerHTML='<div class="muted">Investimentos disponíveis no plano Premium.</div>'; return; }
@@ -356,25 +366,25 @@ function formInvestimento(){
 }
 async function excluirInvest(id){ if(!confirm('Excluir investimento?'))return; await api('/investimentos/'+id,{method:'DELETE'}); loadInvestimentos(); }
 
-// ---------- MODAL GENÉRICO ----------
 function openModal(titulo, campos, onSubmit){
-  const html = '<div class="overlay" id="ovl"><div class="card modal"><h3>'+titulo+'</h3><form id="mform">'
-    + campos.map(c=>{
-        if(c.type==='select'){
-          return '<label>'+c.label+'</label><select name="'+c.name+'">'+c.options.map(o=>'<option value="'+o.value+'"'+(c.value===o.value?' selected':'')+'>'+o.label+'</option>').join('')+'</select>';
-        }
-        return '<label>'+c.label+'</label><input name="'+c.name+'" type="'+c.type+'" step="any" value="'+(c.value!==undefined?c.value:'')+'" />';
-      }).join('')
-    + '<div class="footer"><button type="button" class="ghost" id="mcancel">Cancelar</button><button type="submit" class="btn-primary">Salvar</button></div></form></div></div>';
+  let html = '<div class="overlay" id="ovl"><div class="card modal"><h3>'+titulo+'</h3><form id="mform">';
+  campos.forEach(function(c){
+    if(c.type==='select'){
+      html += '<label>'+c.label+'</label><select name="'+c.name+'">'+c.options.map(function(o){return '<option value="'+o.value+'"'+(c.value===o.value?' selected':'')+'>'+o.label+'</option>';}).join('')+'</select>';
+    } else {
+      html += '<label>'+c.label+'</label><input name="'+c.name+'" type="'+c.type+'" step="any" value="'+(c.value!==undefined?c.value:'')+'" />';
+    }
+  });
+  html += '<div class="footer"><button type="button" class="ghost" id="mcancel">Cancelar</button><button type="submit" class="btn-primary">Salvar</button></div></form></div></div>';
   $('modalRoot').innerHTML = html;
-  $('mcancel').onclick = ()=> $('modalRoot').innerHTML='';
-  $('mform').onsubmit = async (e)=>{
+  $('mcancel').onclick = function(){ $('modalRoot').innerHTML=''; };
+  $('mform').onsubmit = async function(e){
     e.preventDefault();
-    const v={}; new FormData(e.target).forEach((val,k)=>{ if(val!=='') v[k]=val; });
+    const v={}; new FormData(e.target).forEach(function(val,k){ if(val!=='') v[k]=val; });
     try{ await onSubmit(v); $('modalRoot').innerHTML=''; }catch(err){ alert(err.message); }
   };
 }
-$('senha').addEventListener('keydown',e=>{ if(e.key==='Enter') $('loginBtn').click(); });
+$('senha').addEventListener('keydown',function(e){ if(e.key==='Enter') $('loginBtn').click(); });
 </script>
 </body>
 </html>
