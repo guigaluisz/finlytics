@@ -16,7 +16,7 @@ dependencies:
   dartz: ^0.10.1               # Either<Failure, T>
   equatable: ^2.0.5
   intl: ^0.19.0                # moeda/data pt-BR
-  fl_chart: ^0.66.2            # gráficos
+  fl_chart: ^1.2.0            # gráficos
   local_auth: ^2.2.0           # biometria
   get_it: ^7.6.7               # DI
 
